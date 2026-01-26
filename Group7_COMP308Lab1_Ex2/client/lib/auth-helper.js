@@ -1,4 +1,4 @@
-import { signout } from "./api-auth.js";
+import { logout } from "./api-auth.js";
 const auth = {
   isAuthenticated() {
     if (typeof window == "undefined") return false;
@@ -14,7 +14,7 @@ const auth = {
   clearJWT(cb) {
     if (typeof window !== "undefined") sessionStorage.removeItem("jwt");
     cb(); //optional
-    signout().then((data) => {
+    logout().then((data) => {
       document.cookie = "t=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     });
   },
