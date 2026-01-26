@@ -21,7 +21,7 @@ import { useLocation, Navigate, Link, useParams } from "react-router-dom";
 export default function Profile() {
   const location = useLocation();
   const [user, setUser] = useState({});
-  const [redirectToSignin, setRedirectToSignin] = useState(false);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
   const jwt = auth.isAuthenticated();
   const { userId } = useParams();
 
@@ -31,7 +31,7 @@ export default function Profile() {
 
     read({ userId }, { t: jwt.token }, signal).then((data) => {
       if (data && data.error) {
-        setRedirectToSignin(true);
+        setRedirectToLogin(true);
       } else {
         setUser(data);
       }
@@ -40,9 +40,9 @@ export default function Profile() {
     return () => abortController.abort();
   }, [userId]);
 
-  if (redirectToSignin) {
+  if (redirectToLogin) {
     return (
-      <Navigate to="/signin" state={{ from: location.pathname }} replace />
+      <Navigate to="/login" state={{ from: location.pathname }} replace />
     );
   }
 

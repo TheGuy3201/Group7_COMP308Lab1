@@ -1,17 +1,10 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
 const UserSchema = new mongoose.Schema({
-  name: {
+  username: {
     type: String,
     trim: true,
     required: "Name is required",
-  },
-  email: {
-    type: String,
-    trim: true,
-    unique: "Email already exists",
-    match: [/.+\@.+\..+/, "Please fill a valid email address"],
-    required: "Email is required",
   },
   created: {
     type: Date,
@@ -26,6 +19,10 @@ const UserSchema = new mongoose.Schema({
     required: "Password is required",
   },
   salt: String,
+  games: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Game'
+  }],
 });
 UserSchema.virtual("password")
   .set(function (password) {

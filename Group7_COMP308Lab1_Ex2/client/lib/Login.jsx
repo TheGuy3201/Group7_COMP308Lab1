@@ -61,7 +61,7 @@ export default function Login() {
     >
       <CardContent>
         <Typography variant="h6" sx={{ mt: 2, color: "text.primary" }}>
-          Sign In
+          Login
         </Typography>
         <TextField
           id="email"

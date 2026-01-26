@@ -2,7 +2,7 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { expressjwt } from "express-jwt";
 import config from "./../../config/config.js";
-const signin = async (req, res) => {
+const login = async (req, res) => {
   try {
     let user = await User.findOne({ email: req.body.email });
     if (!user) return res.status(401).json({ error: "User not found" });
@@ -22,16 +22,16 @@ const signin = async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(401).json({ error: "Could not sign in" });
+    return res.status(401).json({ error: "Could not log in" });
   }
 };
-const signout = (req, res) => {
+const logout = (req, res) => {
   res.clearCookie("t");
   return res.status(200).json({
-    message: "signed out",
+    message: "logged out",
   });
 };
-const requireSignin = expressjwt({
+const requireLogin = expressjwt({
   secret: config.jwtSecret,
   algorithms: ["HS256"],
   userProperty: "auth",
@@ -47,4 +47,4 @@ const hasAuthorization = (req, res, next) => {
   next();
 };
 
-export default { signin, signout, requireSignin, hasAuthorization };
+export default { login, logout, requireLogin, hasAuthorization };

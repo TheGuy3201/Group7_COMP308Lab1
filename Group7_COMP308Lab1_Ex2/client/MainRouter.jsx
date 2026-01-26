@@ -2,11 +2,14 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./core/Home";
 import Users from "./user/Users.jsx";
-import Signup from "./user/Signup.jsx";
-import Signin from './lib/Signin.jsx'
+import Register from "./user/Register.jsx";
+import Login from './lib/Login.jsx'
 import Profile from "./user/Profile.jsx";
 import PrivateRoute from "./lib/PrivateRoute.jsx";
 import EditProfile from "./user/EditProfile.jsx";
+import Games from "./game/Games.jsx";
+import AddGame from "./game/addGame.jsx";
+import GameDetails from "./game/gameDetails.jsx";
 
 import Menu from "./core/Menu";
 function MainRouter() {
@@ -17,8 +20,11 @@ function MainRouter() {
       <Routes>
          <Route path="/" element={<Home />} />
          <Route path="/users" element={<Users />} />
-         <Route path="/signup" element={<Signup />} />
-         <Route path="/signin" element={<Signin />} />
+         <Route path="/games" element={<Games />} />
+         <Route path="/games/new" element={<AddGame />} />
+         <Route path="/game/:gameId" element={<GameDetails />} />
+         <Route path="/register" element={<Register />} />
+         <Route path="/login" element={<Login />} />
         
         <Route
           path="/user/edit/:userId"

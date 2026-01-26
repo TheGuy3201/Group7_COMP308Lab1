@@ -19,7 +19,7 @@ export default function Menu() {
     <AppBar position="static">
       <Toolbar sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          MERN Skeleton
+          Game Library Management System
         </Typography>
 
         <Link to="/">
@@ -28,20 +28,24 @@ export default function Menu() {
           </IconButton>
         </Link>
 
+        <Link to="/games">
+          <Button sx={{ color: isActive(location, "/games") }}>Games</Button>
+        </Link>
+
         <Link to="/users">
           <Button sx={{ color: isActive(location, "/users") }}>Users</Button>
         </Link>
 
         {!auth.isAuthenticated() && (
           <>
-            <Link to="/signup">
-              <Button sx={{ color: isActive(location, "/signup") }}>
-                Sign up
+            <Link to="/register">
+              <Button sx={{ color: isActive(location, "/register") }}>
+                Register
               </Button>
             </Link>
-            <Link to="/signin">
-              <Button sx={{ color: isActive(location, "/signin") }}>
-                Sign In
+            <Link to="/login">
+              <Button sx={{ color: isActive(location, "/login") }}>
+                Login
               </Button>
             </Link>
           </>
