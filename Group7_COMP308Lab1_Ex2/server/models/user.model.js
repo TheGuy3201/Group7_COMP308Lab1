@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -49,16 +50,14 @@ UserSchema.methods = {
   encryptPassword: function (password) {
     if (!password) return "";
     try {
-      return crypto
-        .createHmac("sha1", this.salt)
-        .update(password)
-        .digest("hex");
+      return bcrypt.hashSync(password, this.salt);
     } catch (err) {
       return "";
     }
   },
   makeSalt: function () {
-    return Math.round(new Date().valueOf() * Math.random()) + "";
+    // Use bcrypt to generate a cryptographically secure salt
+    return bcrypt.genSaltSync(10);
   },
 };
   
