@@ -12,8 +12,4 @@ router
   .delete(authCtrl.requireLogin, authCtrl.hasAuthorization, userCtrl.remove);
 
 router.param("userId", userCtrl.userByID);
-router.route("/api/users/:userId").get(userCtrl.read);
-router.route("/api/users/:userId").put(userCtrl.update);
-router.route("/api/users/:userId").delete(userCtrl.remove);
-
 export default router;

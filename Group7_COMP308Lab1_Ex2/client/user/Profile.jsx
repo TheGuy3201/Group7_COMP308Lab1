@@ -66,7 +66,7 @@ export default function Profile() {
               <PersonIcon />
             </Avatar>
           </ListItemAvatar>
-          <ListItemText primary={user.name} secondary={user.email} />
+          <ListItemText primary={user.username} />
           {auth.isAuthenticated().user &&
             auth.isAuthenticated().user._id === user._id && (
               <ListItemSecondaryAction>

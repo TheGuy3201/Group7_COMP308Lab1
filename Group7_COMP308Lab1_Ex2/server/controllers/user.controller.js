@@ -16,7 +16,7 @@ const create = async (req, res) => {
 };
 const list = async (req, res) => {
   try {
-    let users = await User.find().select("name email updated created");
+    let users = await User.find().select("username created updated");
     res.json(users);
   } catch (err) {
     return res.status(400).json({
@@ -24,6 +24,7 @@ const list = async (req, res) => {
     });
   }
 };
+
 const userByID = async (req, res, next, id) => {
   try {
     let user = await User.findById(id);

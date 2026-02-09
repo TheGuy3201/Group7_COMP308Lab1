@@ -98,13 +98,13 @@ export default function Users() {
                         border: "2px solid rgba(100, 200, 255, 0.6)",
                       }}
                     >
-                      {item.name.charAt(0).toUpperCase()}
+                      {item.username.charAt(0).toUpperCase()}
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
                     primary={
                       <Typography sx={{ color: "#fff", fontWeight: 500 }}>
-                        {item.name}
+                        {item.username}
                       </Typography>
                     }
                     secondary={
