@@ -2,9 +2,17 @@ import { logout } from "./api-auth.js";
 const auth = {
   isAuthenticated() {
     if (typeof window == "undefined") return false;
-    if (sessionStorage.getItem("jwt"))
-      return JSON.parse(sessionStorage.getItem("jwt"));
-    else return false;
+    const jwt = sessionStorage.getItem("jwt");
+    if (jwt) {
+      try {
+        return JSON.parse(jwt);
+      } catch (err) {
+        console.error("Invalid JWT in sessionStorage:", err);
+        sessionStorage.removeItem("jwt");
+        return false;
+      }
+    }
+    return false;
   },
   authenticate(jwt, cb) {
     if (typeof window !== "undefined")

@@ -4,9 +4,16 @@ const list = async (signal) => {
       method: "GET",
       signal: signal,
     });
+    if (!response.ok) {
+      return { error: `HTTP error! status: ${response.status}` };
+    }
     return await response.json();
   } catch (err) {
+    if (err.name === 'AbortError') {
+      return { error: 'Request aborted' };
+    }
     console.log(err);
+    return { error: err.message };
   }
 };
 
@@ -16,9 +23,16 @@ const read = async (params, signal) => {
       method: "GET",
       signal: signal,
     });
+    if (!response.ok) {
+      return { error: `HTTP error! status: ${response.status}` };
+    }
     return await response.json();
   } catch (err) {
+    if (err.name === 'AbortError') {
+      return { error: 'Request aborted' };
+    }
     console.log(err);
+    return { error: err.message };
   }
 };
 
@@ -33,9 +47,14 @@ const create = async (game, credentials) => {
       },
       body: JSON.stringify(game),
     });
+    if (!response.ok) {
+      const text = await response.text();
+      return { error: text || `HTTP error! status: ${response.status}` };
+    }
     return await response.json();
   } catch (err) {
     console.log(err);
+    return { error: err.message };
   }
 };
 
@@ -50,9 +69,14 @@ const update = async (params, credentials, game) => {
       },
       body: JSON.stringify(game),
     });
+    if (!response.ok) {
+      const text = await response.text();
+      return { error: text || `HTTP error! status: ${response.status}` };
+    }
     return await response.json();
   } catch (err) {
     console.log(err);
+    return { error: err.message };
   }
 };
 
@@ -66,9 +90,14 @@ const remove = async (params, credentials) => {
         Authorization: "Bearer " + credentials.t,
       },
     });
+    if (!response.ok) {
+      const text = await response.text();
+      return { error: text || `HTTP error! status: ${response.status}` };
+    }
     return await response.json();
   } catch (err) {
     console.log(err);
+    return { error: err.message };
   }
 };
 
