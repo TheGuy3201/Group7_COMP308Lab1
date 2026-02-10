@@ -3,17 +3,24 @@ const API_BASE = "/api/users";
 
 const handleResponse = async (response) => {
   try {
+    if (!response.ok) {
+      const text = await response.text();
+      return { error: text || `HTTP error! status: ${response.status}` };
+    }
     const data = await response.json();
     return data;
   } catch (err) {
     console.error("Failed to parse response JSON:", err);
-    throw err;
+    return { error: err.message };
   }
 };
 
 const handleError = (err) => {
+  if (err.name === 'AbortError') {
+    return { error: 'Request aborted' };
+  }
   console.error("API call failed:", err);
-  throw err;
+  return { error: err.message };
 };
 
 const create = async (user) => {
