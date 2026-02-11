@@ -101,4 +101,55 @@ const remove = async ({ userId }, { t }) => {
   }
 };
 
-export { create, list, read, update, remove };
+const getUserGames = async ({ userId }, { t }, signal) => {
+  try {
+    const response = await fetch(`${API_BASE}/${userId}/games`, {
+      method: "GET",
+      signal,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${t}`,
+      },
+    });
+    return await handleResponse(response);
+  } catch (err) {
+    return handleError(err);
+  }
+};
+
+const addGameToCollection = async ({ userId }, { t }, gameId) => {
+  try {
+    const response = await fetch(`${API_BASE}/${userId}/collection/add`, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${t}`,
+      },
+      body: JSON.stringify({ gameId }),
+    });
+    return await handleResponse(response);
+  } catch (err) {
+    return handleError(err);
+  }
+};
+
+const removeGameFromCollection = async ({ userId }, { t }, gameId) => {
+  try {
+    const response = await fetch(`${API_BASE}/${userId}/collection/remove`, {
+      method: "PUT",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${t}`,
+      },
+      body: JSON.stringify({ gameId }),
+    });
+    return await handleResponse(response);
+  } catch (err) {
+    return handleError(err);
+  }
+};
+
+export { create, list, read, update, remove, getUserGames, addGameToCollection, removeGameFromCollection };

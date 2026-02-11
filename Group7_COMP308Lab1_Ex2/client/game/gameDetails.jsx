@@ -11,6 +11,8 @@ import {
   Divider,
   Paper,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -18,13 +20,17 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CodeIcon from "@mui/icons-material/Code";
 import CategoryIcon from "@mui/icons-material/Category";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { read } from "./api-game.js";
+import { addGameToCollection } from "../user/api-user.js";
+import auth from "../lib/auth-helper.js";
 
 export default function GameDetails() {
   const { gameId } = useParams();
   const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -41,6 +47,30 @@ export default function GameDetails() {
 
     return () => abortController.abort();
   }, [gameId]);
+
+  const handleAddToCollection = async () => {
+    const jwt = auth.isAuthenticated();
+    if (!jwt || !jwt.token) {
+      setSnackbar({ open: true, message: "Please login to add games to your collection", severity: "warning" });
+      return;
+    }
+
+    const result = await addGameToCollection(
+      { userId: jwt.user._id },
+      { t: jwt.token },
+      gameId
+    );
+
+    if (result && result.error) {
+      setSnackbar({ open: true, message: result.error, severity: "error" });
+    } else {
+      setSnackbar({ open: true, message: "Game added to your collection!", severity: "success" });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   if (loading) {
     return (
@@ -65,14 +95,26 @@ export default function GameDetails() {
 
   return (
     <Box sx={{ p: 3, maxWidth: 1400, margin: "auto" }}>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate(-1)}
-        sx={{ mb: 2 }}
-        variant="outlined"
-      >
-        Back
-      </Button>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate(-1)}
+          variant="outlined"
+        >
+          Back
+        </Button>
+        <Button
+          startIcon={<AddCircleOutlineIcon />}
+          onClick={handleAddToCollection}
+          variant="contained"
+          sx={{
+            bgcolor: "#64c8ff",
+            "&:hover": { bgcolor: "#4fa8df" },
+          }}
+        >
+          Add to My Collection
+        </Button>
+      </Box>
 
       <Card elevation={6} sx={{ overflow: "visible" }}>
         <Box
@@ -185,6 +227,17 @@ export default function GameDetails() {
           </Grid>
         </CardContent>
       </Card>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
