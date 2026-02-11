@@ -11,5 +11,17 @@ router
   .put(authCtrl.requireLogin, authCtrl.hasAuthorization, userCtrl.update)
   .delete(authCtrl.requireLogin, authCtrl.hasAuthorization, userCtrl.remove);
 
+router
+  .route("/api/users/:userId/games")
+  .get(authCtrl.requireLogin, userCtrl.getUserGames);
+
+router
+  .route("/api/users/:userId/collection/add")
+  .put(authCtrl.requireLogin, authCtrl.hasAuthorization, userCtrl.addGameToCollection);
+
+router
+  .route("/api/users/:userId/collection/remove")
+  .put(authCtrl.requireLogin, authCtrl.hasAuthorization, userCtrl.removeGameFromCollection);
+
 router.param("userId", userCtrl.userByID);
 export default router;

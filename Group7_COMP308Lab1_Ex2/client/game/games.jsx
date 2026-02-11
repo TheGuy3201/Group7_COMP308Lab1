@@ -12,16 +12,24 @@ import {
   Chip,
   Rating,
   CircularProgress,
+  IconButton,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { list } from "./api-game.js";
+import { addGameToCollection } from "../user/api-user.js";
+import auth from "../lib/auth-helper.js";
 
 export default function Games() {
   const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -38,6 +46,32 @@ export default function Games() {
 
     return () => abortController.abort();
   }, []);
+
+  const handleAddToCollection = async (e, gameId) => {
+    e.stopPropagation();
+    
+    const jwt = auth.isAuthenticated();
+    if (!jwt || !jwt.token) {
+      setSnackbar({ open: true, message: "Please login to add games to your collection", severity: "warning" });
+      return;
+    }
+
+    const result = await addGameToCollection(
+      { userId: jwt.user._id },
+      { t: jwt.token },
+      gameId
+    );
+
+    if (result && result.error) {
+      setSnackbar({ open: true, message: result.error, severity: "error" });
+    } else {
+      setSnackbar({ open: true, message: "Game added to your collection!", severity: "success" });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   return (
     <motion.div
@@ -178,6 +212,16 @@ export default function Games() {
                   >
                     Description
                   </TableCell>
+                  <TableCell
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#e0e0ff",
+                      backgroundColor: "rgba(100, 200, 255, 0.2)",
+                      borderBottom: "1px solid rgba(100, 200, 255, 0.3)",
+                    }}
+                  >
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -285,6 +329,21 @@ export default function Games() {
                         {game.description || "No description available"}
                       </Typography>
                     </TableCell>
+                    <TableCell>
+                      <Tooltip title="Add to My Collection">
+                        <IconButton
+                          onClick={(e) => handleAddToCollection(e, game._id)}
+                          sx={{
+                            color: "#64c8ff",
+                            "&:hover": {
+                              backgroundColor: "rgba(100, 200, 255, 0.2)",
+                            },
+                          }}
+                        >
+                          <AddCircleOutlineIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -292,6 +351,17 @@ export default function Games() {
           </TableContainer>
         )}
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </motion.div>
   );
 }

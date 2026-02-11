@@ -86,10 +86,30 @@ export default function Login() {
           <TextField
             id="username"
             label="Username"
-            sx={{ mx: 1, width: 300 }}
             value={values.username}
             onChange={handleChange("username")}
             margin="normal"
+            InputProps={{
+              style: { color: "#ffffff" },
+            }}
+            InputLabelProps={{
+              style: { color: "#e0e0ff" },
+            }}
+            sx={{
+              mx: 1,
+              width: 300,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.3)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#64c8ff",
+                },
+              },
+            }}
           />
           <br />
 
@@ -97,10 +117,30 @@ export default function Login() {
             id="password"
             type="password"
             label="Password"
-            sx={{ mx: 1, width: 300 }}
             value={values.password}
             onChange={handleChange("password")}
             margin="normal"
+            InputProps={{
+              style: { color: "#ffffff" },
+            }}
+            InputLabelProps={{
+              style: { color: "#e0e0ff" },
+            }}
+            sx={{
+              mx: 1,
+              width: 300,
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.3)",
+                },
+                "&:hover fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#64c8ff",
+                },
+              },
+            }}
           />
           <br />
 

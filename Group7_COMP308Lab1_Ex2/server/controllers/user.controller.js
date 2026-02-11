@@ -73,4 +73,63 @@ const remove = async (req, res) => {
     });
   }
 };
-export default { create, userByID, read, list, remove, update };
+
+const addGameToCollection = async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    let user = req.profile;
+    
+    if (user.games.includes(gameId)) {
+      return res.status(400).json({
+        error: "Game already in collection",
+      });
+    }
+    
+    user.games.push(gameId);
+    await user.save();
+    
+    user.hashed_password = undefined;
+    user.salt = undefined;
+    return res.json(user);
+  } catch (err) {
+    return res.status(400).json({
+      error: errorHandler.getErrorMessage(err),
+    });
+  }
+};
+
+const removeGameFromCollection = async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    let user = req.profile;
+    
+    user.games = user.games.filter(id => id.toString() !== gameId);
+    await user.save();
+    
+    user.hashed_password = undefined;
+    user.salt = undefined;
+    return res.json(user);
+  } catch (err) {
+    return res.status(400).json({
+      error: errorHandler.getErrorMessage(err),
+    });
+  }
+};
+
+const getUserGames = async (req, res) => {
+  try {
+    let user = await User.findById(req.profile._id).populate('games', 'title genre platform releaseYear developer rating description');
+    if (!user) {
+      return res.status(400).json({
+        error: "User not found",
+      });
+    }
+    return res.json(user.games);
+  } catch (err) {
+    return res.status(400).json({
+      error: errorHandler.getErrorMessage(err),
+    });
+  }
+};
+
+export default { create, userByID, read, list, remove, update, addGameToCollection, removeGameFromCollection, getUserGames };

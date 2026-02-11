@@ -150,7 +150,14 @@ function MainRouter() {
             </PrivateRoute>
           }
         />
-         <Route path="/user/:userId" element={<Profile />} />
+        <Route
+          path="/user/:userId"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </div>
     </>

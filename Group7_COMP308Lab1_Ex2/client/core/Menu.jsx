@@ -53,7 +53,12 @@ export default function Menu() {
 
         {auth.isAuthenticated() && (
           <>
-            {/* <Link to={`/user/${auth.isAuthenticated().user._id}`}>
+            <Link to="/games/new">
+              <Button sx={{ color: isActive(location, "/games/new") }}>
+                Add Game
+              </Button>
+            </Link>
+            <Link to={`/user/${auth.isAuthenticated().user._id}`}>
               <Button
                 sx={{
                   color: isActive(
@@ -64,7 +69,7 @@ export default function Menu() {
               >
                 My Profile
               </Button>
-            </Link> */}
+            </Link>
             <Button
               sx={{ color: "#ffffff" }}
               onClick={() => {
