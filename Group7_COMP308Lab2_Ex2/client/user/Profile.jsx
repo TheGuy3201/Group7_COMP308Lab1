@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useQuery, gql } from "@apollo/client";
 import {
   Paper,
   List,
@@ -25,52 +26,46 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import DeleteUser from "./DeleteUser";
 import auth from "../lib/auth-helper.js";
-import { read, getUserGames, removeGameFromCollection } from "./api-user.js";
 import { Link, useParams, useNavigate } from "react-router-dom";
+
+const GET_PLAYER = gql`
+  query GetPlayer($playerId: ID!) {
+    player(playerId: $playerId) {
+      playerId
+      username
+      email
+      avatarIMG
+      favouriteGames {
+        gameId
+        title
+        genre
+        platform
+        releaseYear
+        developer
+        rating
+        description
+      }
+    }
+  }
+`;
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState({});
-  const [games, setGames] = useState([]);
-  const [loadingGames, setLoadingGames] = useState(true);
-  const { userId } = useParams();
+  const authData = auth.isAuthenticated();
+  const { userId: routeUserId } = useParams();
+  const userId = routeUserId || authData?.player?.playerId;
+  
+  const { loading, error, data } = useQuery(GET_PLAYER, {
+    variables: { playerId: userId },
+    skip: !userId
+  });
 
-  useEffect(() => {
-    const jwt = auth.isAuthenticated();
-    if (!jwt || !jwt.token) return;
-
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
-    read({ userId }, { t: jwt.token }, signal).then((data) => {
-      if (data && !data.error) {
-        setUser(data);
-      }
-    });
-
-    getUserGames({ userId }, { t: jwt.token }, signal).then((data) => {
-      if (data && !data.error) {
-        setGames(data);
-      }
-      setLoadingGames(false);
-    });
-
-    return () => abortController.abort();
-  }, [userId]);
+  const user = data?.player || {};
+  const games = user.favouriteGames || [];
 
   const handleRemoveGame = async (gameId) => {
-    const jwt = auth.isAuthenticated();
-    if (!jwt || !jwt.token) return;
-    
-    const result = await removeGameFromCollection(
-      { userId },
-      { t: jwt.token },
-      gameId
-    );
-
-    if (result && !result.error) {
-      setGames(games.filter((game) => game._id !== gameId));
-    }
+    // TODO: Implement remove game from collection with GraphQL mutation
+    console.log("Remove game:", gameId);
   };
 
   return (
@@ -102,26 +97,22 @@ export default function Profile() {
               primary={user.username}
               sx={{ color: "#e0e0ff" }}
             />
-            {auth.isAuthenticated().user &&
-              auth.isAuthenticated().user._id === user._id && (
+            {authData?.player &&
+              authData.player.playerId === user.playerId && (
                 <ListItemSecondaryAction>
-                  <Link to={`/user/edit/${user._id}`}>
+                  <Link to={`/user/edit/${user.playerId}`}>
                     <IconButton aria-label="Edit" sx={{ color: "#64c8ff" }}>
                       <EditIcon />
                     </IconButton>
                   </Link>
-                  <DeleteUser userId={user._id} />
+                  <DeleteUser userId={user.playerId} />
                 </ListItemSecondaryAction>
               )}
           </ListItem>
           <Divider sx={{ bgcolor: "rgba(255, 255, 255, 0.2)" }} />
           <ListItem>
             <ListItemText
-              primary={
-                user.created
-                  ? `Joined: ${new Date(user.created).toDateString()}`
-                  : "Loading..."
-              }
+              primary={user.email || "Loading..."}
               sx={{ color: "#e0e0ff" }}
             />
           </ListItem>
@@ -148,7 +139,7 @@ export default function Profile() {
           </Button>
         </Box>
 
-        {loadingGames ? (
+        {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
             <CircularProgress sx={{ color: "#64c8ff" }} />
           </Box>
@@ -170,7 +161,7 @@ export default function Profile() {
         ) : (
           <Grid container spacing={3}>
             {games.map((game) => (
-              <Grid item xs={12} sm={6} md={4} key={game._id}>
+              <Grid item xs={12} sm={6} md={4} key={game.gameId}>
                 <Card
                   sx={{
                     height: "100%",
@@ -190,11 +181,11 @@ export default function Profile() {
                       <Typography variant="h6" sx={{ color: "#e0e0ff", fontWeight: 600, flex: 1 }}>
                         {game.title}
                       </Typography>
-                      {auth.isAuthenticated().user &&
-                        auth.isAuthenticated().user._id === userId && (
+                      {authData?.player &&
+                        authData.player.playerId === userId && (
                           <IconButton
                             size="small"
-                            onClick={() => handleRemoveGame(game._id)}
+                            onClick={() => handleRemoveGame(game.gameId)}
                             sx={{ color: "#ff6b6b" }}
                           >
                             <DeleteIcon />
@@ -263,7 +254,7 @@ export default function Profile() {
                       )}
                       <Button
                         size="small"
-                        onClick={() => navigate(`/game/${game._id}`)}
+                        onClick={() => navigate(`/game/${game.gameId}`)}
                         sx={{ color: "#64c8ff" }}
                       >
                         View Details

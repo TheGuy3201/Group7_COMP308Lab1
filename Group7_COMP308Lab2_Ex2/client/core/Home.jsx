@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { gql, useQuery } from '@apollo/client';
 import {
   Card,
   CardContent,
@@ -10,27 +11,26 @@ import {
 import TrashIcon from "@mui/icons-material/Delete";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { list } from "../game/api-game";
+import {Canvas} from "@react-three/fiber";
+import { OrbitControls, Environment } from "@react-three/drei";
+
+const GET_GAMES = gql`
+  query GetGames {
+    games {
+      gameId
+      title
+      genre
+      platform
+      rating
+      description
+    }
+  }
+`;
 
 const Home = () => {
-  const [games, setGames] = useState([]); // ✅ NEVER undefined
-  const [loading, setLoading] = useState(true);
+    const { loading, error, data } = useQuery(GET_GAMES);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    list(abortController.signal).then((data) => {
-      if (!data || data.error) {
-        console.error(data?.error);
-        setGames([]);
-      } else {
-        setGames(data);
-      }
-      setLoading(false);
-    });
-
-    return () => abortController.abort();
-  }, []);
+    const games = data?.games || [];
 
   return (
     <motion.div
@@ -55,7 +55,11 @@ const Home = () => {
           Your Games
         </Typography>
 
-        {loading ? (
+        {error ? (
+          <Typography sx={{ p: 3, color: "#ff5555" }}>
+            Error loading games: {error.message}
+          </Typography>
+        ) : loading ? (
           <Typography sx={{ p: 3, color: "#ccc" }}>
             Loading games...
           </Typography>
@@ -74,12 +78,12 @@ const Home = () => {
           >
             {games.map((game) => (
               <motion.div
-                key={game._id}
+                key={game.gameId}
                 whileHover={{ y: -8 }}
               >
                 <Card
                   component={Link}
-                  to={`/game/${game._id}`}
+                  to={`/game/${game.gameId}`}
                   sx={{
                     minWidth: 260,
                     textDecoration: "none",
@@ -121,5 +125,5 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Home; 
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useMutation, gql } from '@apollo/client';
 import {
   Card,
   CardContent,
@@ -15,7 +16,16 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { create } from "./api-user";
+
+const ADD_PLAYER = gql`
+  mutation AddPlayer($username: String!, $password: String!, $email: String!) {
+    addPlayer(username: $username, password: $password, email: $email) {
+      playerId
+      username
+      email
+    }
+  }
+`;
 
 export default function Register() {
   const [values, setValues] = useState({
@@ -26,6 +36,7 @@ export default function Register() {
   });
 
   const [open, setOpen] = useState(false);
+  const [addPlayer, { loading }] = useMutation(ADD_PLAYER);
 
   const handleChange = (name) => (event) => {
     setValues({ ...values, [name]: event.target.value });
@@ -35,24 +46,28 @@ export default function Register() {
     setOpen(false);
   };
 
-  const clickSubmit = () => {
+  const clickSubmit = async () => {
     if (!values.name || !values.email || !values.password) {
       setValues({ ...values, error: "All fields are required" });
       return;
     }
 
-    const user = {
-      username: values.name,
-      password: values.password,
-    };
+    try {
+      const { data } = await addPlayer({
+        variables: {
+          username: values.name,
+          email: values.email,
+          password: values.password,
+        },
+      });
 
-    create(user).then((data) => {
-      if (data?.error) {
-        setValues({ ...values, error: data.error });
-      } else {
+      if (data && data.addPlayer) {
         setOpen(true);
+        setValues({ name: "", email: "", password: "", error: "" });
       }
-    });
+    } catch (err) {
+      setValues({ ...values, error: err.message });
+    }
   };
 
   return (

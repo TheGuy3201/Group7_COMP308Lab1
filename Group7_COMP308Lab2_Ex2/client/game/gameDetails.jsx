@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useQuery, gql } from "@apollo/client";
 import {
   Card,
   CardContent,
@@ -21,51 +22,35 @@ import CodeIcon from "@mui/icons-material/Code";
 import CategoryIcon from "@mui/icons-material/Category";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { read } from "./api-game.js";
-import { addGameToCollection } from "../user/api-user.js";
-import auth from "../lib/auth-helper.js";
+
+const GET_GAME = gql`
+  query GetGame($gameId: ID!) {
+    game(gameId: $gameId) {
+      gameId
+      title
+      genre
+      platform
+      releaseYear
+      developer
+      rating
+      description
+    }
+  }
+`;
 
 export default function GameDetails() {
   const { gameId } = useParams();
   const navigate = useNavigate();
-  const [game, setGame] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { loading, error, data } = useQuery(GET_GAME, {
+    variables: { gameId }
+  });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
-    read({ gameId }, signal).then((data) => {
-      if (data && data.error) {
-        console.log(data.error);
-      } else {
-        setGame(data);
-      }
-      setLoading(false);
-    });
-
-    return () => abortController.abort();
-  }, [gameId]);
+  const game = data?.game;
 
   const handleAddToCollection = async () => {
-    const jwt = auth.isAuthenticated();
-    if (!jwt || !jwt.token) {
-      setSnackbar({ open: true, message: "Please login to add games to your collection", severity: "warning" });
-      return;
-    }
-
-    const result = await addGameToCollection(
-      { userId: jwt.user._id },
-      { t: jwt.token },
-      gameId
-    );
-
-    if (result && result.error) {
-      setSnackbar({ open: true, message: result.error, severity: "error" });
-    } else {
-      setSnackbar({ open: true, message: "Game added to your collection!", severity: "success" });
-    }
+    // TODO: Implement add to collection with GraphQL mutation
+    setSnackbar({ open: true, message: "Feature coming soon!", severity: "info" });
   };
 
   const handleCloseSnackbar = () => {
@@ -213,17 +198,7 @@ export default function GameDetails() {
               </Paper>
             </Grid>
 
-            {/* Additional Info */}
-            <Grid item xs={12}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Added: {new Date(game.created).toLocaleDateString()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Last Updated: {new Date(game.updated).toLocaleDateString()}
-                </Typography>
-              </Box>
-            </Grid>
+
           </Grid>
         </CardContent>
       </Card>
