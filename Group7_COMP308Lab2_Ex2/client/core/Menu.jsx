@@ -14,6 +14,7 @@ const isActive = (location, path) =>
 export default function Menu() {
   const navigate = useNavigate();
   const location = useLocation();
+  const authData = auth.isAuthenticated();
 
   return (
     <AppBar position="static">
@@ -51,19 +52,19 @@ export default function Menu() {
           </>
         )}
 
-        {auth.isAuthenticated() && (
+        {authData && (
           <>
             <Link to="/games/new">
               <Button sx={{ color: isActive(location, "/games/new") }}>
                 Add Game
               </Button>
             </Link>
-            <Link to={`/user/${auth.isAuthenticated().user._id}`}>
+            <Link to={`/user/${authData?.player?.playerId}`}>
               <Button
                 sx={{
                   color: isActive(
                     location,
-                    `/user/${auth.isAuthenticated().user._id}`
+                    `/user/${authData?.player?.playerId}`
                   ),
                 }}
               >

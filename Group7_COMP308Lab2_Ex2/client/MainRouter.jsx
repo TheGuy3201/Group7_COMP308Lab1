@@ -9,7 +9,7 @@ import Login from './lib/Login.jsx'
 import Profile from "./user/Profile.jsx";
 import PrivateRoute from "./lib/PrivateRoute.jsx";
 import EditProfile from "./user/EditProfile.jsx";
-import Games from "./game/Games.jsx";
+import Games from "./game/games.jsx";
 import AddGame from "./game/addGame.jsx";
 import GameDetails from "./game/gameDetails.jsx";
 

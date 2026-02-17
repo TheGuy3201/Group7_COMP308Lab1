@@ -10,33 +10,49 @@ import Box from "@mui/material/Box";
 import { motion } from "framer-motion";
 import auth from "./auth-helper.js";
 import { Navigate, useLocation } from "react-router-dom";
-import { login } from "./api-auth.js";
+import { useMutation, gql } from "@apollo/client";
+
+const LOGIN_MUTATION = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      player {
+        playerId
+        username
+        email
+        avatarIMG
+      }
+      message
+    }
+  }
+`;
 
 export default function Login() {
   const location = useLocation();
 
   const [values, setValues] = useState({
-    username: "",
+    email: "",
     password: "",
     error: "",
     redirectToReferrer: false,
   });
 
+  const [loginMutation, { loading }] = useMutation(LOGIN_MUTATION);
+
   const handleChange = (name) => (event) => {
     setValues({ ...values, [name]: event.target.value });
   };
 
-  const clickSubmit = () => {
-    const user = {
-      username: values.username || undefined,
-      password: values.password || undefined,
-    };
+  const clickSubmit = async () => {
+    try {
+      const { data } = await loginMutation({
+        variables: {
+          email: values.email,
+          password: values.password,
+        },
+      });
 
-    login(user).then((data) => {
-      if (data?.error) {
-        setValues({ ...values, error: data.error });
-      } else {
-        auth.authenticate(data, () => {
+      if (data && data.login) {
+        auth.authenticate(data.login, () => {
           setValues({
             ...values,
             error: "",
@@ -44,7 +60,9 @@ export default function Login() {
           });
         });
       }
-    });
+    } catch (err) {
+      setValues({ ...values, error: err.message });
+    }
   };
 
   const { from } = location.state || {
@@ -84,10 +102,11 @@ export default function Login() {
           </Typography>
 
           <TextField
-            id="username"
-            label="Username"
-            value={values.username}
-            onChange={handleChange("username")}
+            id="email"
+            label="Email"
+            type="email"
+            value={values.email}
+            onChange={handleChange("email")}
             margin="normal"
             InputProps={{
               style: { color: "#ffffff" },

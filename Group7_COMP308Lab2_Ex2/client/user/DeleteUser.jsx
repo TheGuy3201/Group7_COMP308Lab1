@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
+import { useMutation, gql } from "@apollo/client";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -9,28 +10,37 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import auth from "../lib/auth-helper.js";
-import { remove } from "./api-user.js";
 import { Navigate } from "react-router-dom";
+
+const DELETE_PLAYER = gql`
+  mutation DeletePlayer($playerId: ID!) {
+    deletePlayer(playerId: $playerId)
+  }
+`;
 
 export default function DeleteUser({ userId }) {
   const [open, setOpen] = useState(false);
   const [redirect, setRedirect] = useState(false);
 
-  const jwt = auth.isAuthenticated();
+  const [deletePlayer] = useMutation(DELETE_PLAYER);
 
   const clickButton = () => {
     setOpen(true);
   };
 
-  const deleteAccount = () => {
-    remove({ userId }, { t: jwt.token }).then((data) => {
-      if (data?.error) {
-        console.error(data.error);
-      } else {
+  const deleteAccount = async () => {
+    try {
+      const { data } = await deletePlayer({
+        variables: { playerId: userId }
+      });
+
+      if (data?.deletePlayer) {
         auth.clearJWT(() => console.log("deleted"));
         setRedirect(true);
       }
-    });
+    } catch (err) {
+      console.error("Delete error:", err.message);
+    }
   };
 
   const handleRequestClose = () => {

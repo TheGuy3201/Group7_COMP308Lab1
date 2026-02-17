@@ -1,39 +1,37 @@
-import React, { useState, useEffect } from "react";
-import {
-  Paper,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Avatar,
-  Typography,
-  Link,
-  Box,
-} from "@mui/material";
-import ArrowForward from "@mui/icons-material/ArrowForward";
-import { motion } from "framer-motion";
-import { list } from "./api-user.js";
-import { Link as RouterLink } from "react-router-dom";
+import React from 'react';
+import { useQuery, gql } from '@apollo/client';
+import Paper from '@mui/material/Paper';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
+import ListItemText from '@mui/material/ListItemText';
+import Link from '@mui/material/Link';
+import Avatar from '@mui/material/Avatar';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import ArrowForward from '@mui/icons-material/ArrowForward';
+import Person from '@mui/icons-material/Person';
+import { Link as RouterLink } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+// Define GraphQL query
+const GET_PLAYERS = gql`
+  query GetPlayers {
+    players {
+      playerId
+      username
+      email
+      avatarIMG
+    }
+  }
+`;
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
-    list(signal).then((data) => {
-      if (data?.error) {
-        console.log(data.error);
-      } else {
-        setUsers(data);
-      }
-    });
-
-    return () => abortController.abort();
-  }, []);
+  // Replace REST API call with GraphQL query
+  const { loading, error, data } = useQuery(GET_PLAYERS);
+  
+  const users = data?.players || [];
 
   return (
     <motion.div
@@ -67,13 +65,13 @@ export default function Users() {
         <List dense>
           {users.map((item, i) => (
             <motion.div
-              key={item._id}
+              key={item.playerId}
               whileHover={{ backgroundColor: "rgba(100, 200, 255, 0.1)" }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               <Link
                 component={RouterLink}
-                to={`/user/${item._id}`}
+                to={`/user/${item.playerId}`}
                 underline="none"
                 sx={{ color: "inherit" }}
               >
@@ -109,7 +107,7 @@ export default function Users() {
                     }
                     secondary={
                       <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)" }}>
-                        User
+                        {item.email}
                       </Typography>
                     }
                   />
