@@ -58,9 +58,6 @@ export default function AddGame() {
   const jwt = auth.isAuthenticated();
   const [addGame, { data, loading, error }] = useMutation(ADD_GAME);
 
-  if (loading) return 'Submitting...';
-  if (error) return `Submission error! ${error.message}`;
-
   const [values, setValues] = useState({
     title: "",
     genre: "",
@@ -86,7 +83,7 @@ export default function AddGame() {
       title: values.title || undefined,
       genre: values.genre || undefined,
       platform: values.platform || undefined,
-      releaseYear: values.releaseYear || undefined,
+      releaseYear: values.releaseYear ? parseInt(values.releaseYear) : undefined,
       developer: values.developer || undefined,
       rating: values.rating,
       description: values.description || undefined,
@@ -138,6 +135,24 @@ export default function AddGame() {
                 className="alert-success"
               >
                 Game successfully added! Redirecting to games list...
+              </Alert>
+            )}
+
+            {loading && (
+              <Alert 
+                severity="info" 
+                className="alert-info"
+              >
+                Submitting...
+              </Alert>
+            )}
+
+            {error && (
+              <Alert 
+                severity="error" 
+                className="alert-error"
+              >
+                Submission error! {error.message}
               </Alert>
             )}
 

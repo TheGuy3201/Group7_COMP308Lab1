@@ -59,6 +59,11 @@ export default function Menu() {
                 Add Game
               </Button>
             </Link>
+            <Link to="/favorites">
+              <Button sx={{ color: isActive(location, "/favorites") }}>
+                Favorites
+              </Button>
+            </Link>
             <Link to={`/user/${authData?.player?.playerId}`}>
               <Button
                 sx={{
