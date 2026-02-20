@@ -17,14 +17,77 @@ import {
   Tooltip,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from "@mui/material";
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import auth from "../lib/auth-helper.js";
+import "./game.css";
 
-const GET_GAMES = gql`
+const GET_PLAYER_FAVORITES = gql`
+  query GetPlayer($playerId: ID!) {
+    player(playerId: $playerId) {
+      playerId
+      username
+      avatarIMG
+      favouriteGames {
+        gameId
+        title
+        genre
+        platform
+        releaseYear
+        developer
+        rating
+        description
+      }
+    }
+  }
+`;
+
+const ADD_FAVORITE_GAME = gql`
+  mutation AddFavouriteGame($playerId: ID!, $gameId: ID!) {
+    addFavouriteGame(playerId: $playerId, gameId: $gameId) {
+      playerId
+      favouriteGames {
+        gameId
+        title
+        genre
+        platform
+        releaseYear
+        developer
+        rating
+        description
+      }
+    }
+  }
+`;
+
+const REMOVE_FAVORITE_GAME = gql`
+  mutation RemoveFavouriteGame($playerId: ID!, $gameId: ID!) {
+    removeFavouriteGame(playerId: $playerId, gameId: $gameId) {
+      playerId
+      favouriteGames {
+        gameId
+        title
+        genre
+        platform
+        releaseYear
+        developer
+        rating
+        description
+      }
+    }
+  }
+`;
+
+const GET_ALL_GAMES = gql`
   query GetGames {
     games {
       gameId
@@ -39,50 +102,83 @@ const GET_GAMES = gql`
   }
 `;
 
-const ADD_FAVORITE_GAME = gql`
-  mutation AddFavouriteGame($playerId: ID!, $gameId: ID!) {
-    addFavouriteGame(playerId: $playerId, gameId: $gameId) {
-      playerId
-      favouriteGames {
-        gameId
-      }
-    }
-  }
-`;
-
-export default function Games() {
+export default function Favorites() {
   const navigate = useNavigate();
   const authData = auth.isAuthenticated();
-  const { loading, error, data } = useQuery(GET_GAMES);
-  const [addFavorite] = useMutation(ADD_FAVORITE_GAME);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const playerId = authData?.player?.playerId;
 
-  const games = data?.games || [];
+  const {
+    loading: favoritesLoading,
+    error: favoritesError,
+    data: favoritesData,
+    refetch: refetchFavorites,
+  } = useQuery(GET_PLAYER_FAVORITES, {
+    variables: { playerId },
+    skip: !playerId,
+  });
 
-  const handleAddToCollection = async (e, gameId) => {
-    e.stopPropagation();
-    
-    if (!authData) {
-      setSnackbar({ open: true, message: "Please log in to add to favorites!", severity: "warning" });
-      return;
-    }
+  const { loading: gamesLoading, error: gamesError, data: gamesData } = useQuery(GET_ALL_GAMES);
 
-    try {
-      await addFavorite({
-        variables: {
-          playerId: authData.player.playerId,
-          gameId
-        }
-      });
+  const [addFavorite] = useMutation(ADD_FAVORITE_GAME, {
+    onCompleted: () => {
+      refetchFavorites();
       setSnackbar({ open: true, message: "Added to favorites!", severity: "success" });
-    } catch (err) {
-      setSnackbar({ open: true, message: `Error: ${err.message}`, severity: "error" });
-    }
+    },
+  });
+
+  const [removeFavorite] = useMutation(REMOVE_FAVORITE_GAME, {
+    onCompleted: () => {
+      refetchFavorites();
+      setSnackbar({ open: true, message: "Removed from favorites!", severity: "success" });
+    },
+  });
+
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+
+  const favoriteGameIds = new Set(favoritesData?.player?.favouriteGames?.map((g) => g.gameId) || []);
+  const allGames = gamesData?.games || [];
+  const favoriteGames = favoritesData?.player?.favouriteGames || [];
+  const availableGames = allGames.filter((game) => !favoriteGameIds.has(game.gameId));
+
+  const handleAddToFavorites = (gameId) => {
+    addFavorite({ variables: { playerId, gameId } });
+    setAddDialogOpen(false);
+  };
+
+  const handleRemoveFromFavorites = (gameId) => {
+    removeFavorite({ variables: { playerId, gameId } });
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
+
+  if (!authData) {
+    return (
+      <Box sx={{ p: 3, textAlign: "center" }}>
+        <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.7)" }}>
+          Please log in to view your favorite games.
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (favoritesLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+        <CircularProgress sx={{ color: "#64c8ff" }} />
+      </Box>
+    );
+  }
+
+  if (favoritesError) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">Error loading favorites: {favoritesError.message}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <motion.div
@@ -91,18 +187,31 @@ export default function Games() {
       transition={{ duration: 0.6 }}
     >
       <Box sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-          <SportsEsportsIcon sx={{ fontSize: 40, mr: 2, color: "#64c8ff" }} />
-          <Typography variant="h4" sx={{ color: "#e0e0ff", fontWeight: 600 }}>
-            All Games
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3, justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <FavoriteIcon sx={{ fontSize: 40, mr: 2, color: "#ff4081" }} />
+            <Typography variant="h4" sx={{ color: "#e0e0ff", fontWeight: 600 }}>
+              My Favorite Games
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setAddDialogOpen(true)}
+            sx={{
+              backgroundColor: "#64c8ff",
+              color: "#1a1a2e",
+              fontWeight: 600,
+              "&:hover": {
+                backgroundColor: "#4eb8ff",
+              },
+            }}
+          >
+            Add Game to Favorites
+          </Button>
         </Box>
 
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-            <CircularProgress sx={{ color: "#64c8ff" }} />
-          </Box>
-        ) : games.length === 0 ? (
+        {favoriteGames.length === 0 ? (
           <Paper
             sx={{
               p: 5,
@@ -115,7 +224,7 @@ export default function Games() {
             }}
           >
             <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.7)" }}>
-              No games found. Add some games to get started!
+              No favorite games yet. Add some to get started!
             </Typography>
           </Paper>
         ) : (
@@ -148,11 +257,7 @@ export default function Games() {
           >
             <Table stickyHeader>
               <TableHead>
-                <TableRow
-                  sx={{
-                    backgroundColor: "rgba(100, 200, 255, 0.2)",
-                  }}
-                >
+                <TableRow sx={{ backgroundColor: "rgba(100, 200, 255, 0.2)" }}>
                   <TableCell
                     sx={{
                       fontWeight: "bold",
@@ -229,6 +334,7 @@ export default function Games() {
                       color: "#e0e0ff",
                       backgroundColor: "rgba(100, 200, 255, 0.2)",
                       borderBottom: "1px solid rgba(100, 200, 255, 0.3)",
+                      textAlign: "center",
                     }}
                   >
                     Actions
@@ -236,51 +342,53 @@ export default function Games() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {games.map((game, index) => (
+                {favoriteGames.map((game) => (
                   <TableRow
                     key={game.gameId}
-                    onClick={() => navigate(`/game/${game.gameId}`)}
                     sx={{
-                      backgroundColor:
-                        index % 2 === 0
-                          ? "rgba(255, 255, 255, 0.02)"
-                          : "rgba(255, 255, 255, 0.05)",
                       "&:hover": {
-                        backgroundColor: "rgba(100, 200, 255, 0.15)",
-                        cursor: "pointer",
+                        backgroundColor: "rgba(100, 200, 255, 0.1)",
                       },
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                      transition: "all 0.3s ease",
+                      borderBottom: "1px solid rgba(100, 200, 255, 0.1)",
                     }}
                   >
-                    <TableCell sx={{ color: "#fff" }}>
-                      <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "rgba(255,255,255,0.9)", fontWeight: 500 }}
+                      >
                         {game.title}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={game.genre}
-                        sx={{
-                          backgroundColor: "rgba(100, 200, 255, 0.3)",
-                          color: "#fff",
-                          fontWeight: 600,
-                          border: "1px solid rgba(100, 200, 255, 0.5)",
-                        }}
-                        size="small"
-                      />
+                      {game.genre ? (
+                        <Chip
+                          label={game.genre}
+                          size="small"
+                          sx={{
+                            backgroundColor: "rgba(100, 200, 255, 0.3)",
+                            color: "#fff",
+                            fontWeight: 600,
+                            border: "1px solid rgba(100, 200, 255, 0.5)",
+                          }}
+                        />
+                      ) : (
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)" }}>
+                          N/A
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       {game.platform ? (
                         <Chip
                           label={game.platform}
+                          size="small"
                           sx={{
-                            backgroundColor: "rgba(200, 150, 255, 0.3)",
+                            backgroundColor: "rgba(100, 200, 255, 0.3)",
                             color: "#fff",
                             fontWeight: 600,
-                            border: "1px solid rgba(200, 150, 255, 0.5)",
+                            border: "1px solid rgba(100, 200, 255, 0.5)",
                           }}
-                          size="small"
                         />
                       ) : (
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)" }}>
@@ -340,18 +448,18 @@ export default function Games() {
                         {game.description || "No description available"}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Tooltip title="Add to My Collection">
+                    <TableCell sx={{ textAlign: "center" }}>
+                      <Tooltip title="Remove from Favorites">
                         <IconButton
-                          onClick={(e) => handleAddToCollection(e, game.gameId)}
+                          onClick={() => handleRemoveFromFavorites(game.gameId)}
                           sx={{
-                            color: "#64c8ff",
+                            color: "#ff4081",
                             "&:hover": {
-                              backgroundColor: "rgba(100, 200, 255, 0.2)",
+                              backgroundColor: "rgba(255, 64, 129, 0.2)",
                             },
                           }}
                         >
-                          <AddCircleOutlineIcon />
+                          <DeleteIcon />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
@@ -361,18 +469,81 @@ export default function Games() {
             </Table>
           </TableContainer>
         )}
-      </Box>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        <Dialog
+          open={addDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: "rgba(26, 26, 46, 0.95)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+            },
+          }}
+        >
+          <DialogTitle sx={{ color: "#e0e0ff", fontWeight: 600 }}>
+            Add Game to Favorites
+          </DialogTitle>
+          <DialogContent>
+            {gamesLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                <CircularProgress sx={{ color: "#64c8ff" }} />
+              </Box>
+            ) : availableGames.length === 0 ? (
+              <Typography sx={{ color: "rgba(255,255,255,0.7)", py: 2 }}>
+                All games are already in your favorites!
+              </Typography>
+            ) : (
+              <Box sx={{ maxHeight: "400px", overflow: "auto", py: 2 }}>
+                {availableGames.map((game) => (
+                  <Paper
+                    key={game.gameId}
+                    onClick={() => handleAddToFavorites(game.gameId)}
+                    sx={{
+                      p: 2,
+                      mb: 1,
+                      backgroundColor: "rgba(100, 200, 255, 0.1)",
+                      border: "1px solid rgba(100, 200, 255, 0.3)",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        backgroundColor: "rgba(100, 200, 255, 0.2)",
+                        border: "1px solid rgba(100, 200, 255, 0.6)",
+                        transform: "translateX(5px)",
+                      },
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: "#e0e0ff", fontWeight: 500 }}>
+                      {game.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)" }}>
+                      {game.genre} • {game.releaseYear}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAddDialogOpen(false)} sx={{ color: "#64c8ff" }}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </motion.div>
   );
 }
