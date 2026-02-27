@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useQuery, useMutation, gql } from "@apollo/client";
 import {
   Card,
   CardActions,
@@ -9,11 +10,8 @@ import {
   Icon,
 } from "@mui/material";
 import auth from "../lib/auth-helper.js";
-import { read, update } from "./api-user.js";
 import { Navigate, useParams } from "react-router-dom";
 
-<<<<<<< Updated upstream:Group7_COMP308Lab1_Ex2/client/user/EditProfile.jsx
-=======
 const GET_PLAYER = gql`
   query GetPlayer($playerId: ID!) {
     player(playerId: $playerId) {
@@ -44,7 +42,6 @@ const UPDATE_PLAYER = gql`
   }
 `;
 
->>>>>>> Stashed changes:Group7_COMP308Lab2_Ex2/client/user/EditProfile.jsx
 export default function EditProfile() {
   const { userId } = useParams();
 
@@ -52,18 +49,10 @@ export default function EditProfile() {
     name: "",
     password: "",
     email: "",
-    open: false,
     error: "",
     NavigateToProfile: false,
   });
 
-<<<<<<< Updated upstream:Group7_COMP308Lab1_Ex2/client/user/EditProfile.jsx
-  const jwt = auth.isAuthenticated();
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-=======
   const { loading, error, data } = useQuery(GET_PLAYER, {
     variables: { playerId: userId },
     skip: !userId,
@@ -90,37 +79,17 @@ export default function EditProfile() {
           password: values.password || undefined,
         },
       });
->>>>>>> Stashed changes:Group7_COMP308Lab2_Ex2/client/user/EditProfile.jsx
 
-    read({ userId }, { t: jwt.token }, signal).then((data) => {
-      if (data?.error) {
-        setValues((prev) => ({ ...prev, error: data.error }));
-      } else {
-        setValues((prev) => ({ ...prev, name: data.name, email: data.email }));
-      }
-    });
-
-    return () => abortController.abort();
-  }, [userId]);
-
-  const clickSubmit = () => {
-    const user = {
-      name: values.name || undefined,
-      email: values.email || undefined,
-      password: values.password || undefined,
-    };
-
-    update({ userId }, { t: jwt.token }, user).then((data) => {
-      if (data?.error) {
-        setValues((prev) => ({ ...prev, error: data.error }));
-      } else {
+      if (data?.updatePlayer) {
         setValues((prev) => ({
           ...prev,
-          userId: data._id,
+          userId: data.updatePlayer.playerId,
           NavigateToProfile: true,
         }));
       }
-    });
+    } catch (err) {
+      setValues((prev) => ({ ...prev, error: err.message }));
+    }
   };
 
   const handleChange = (name) => (event) => {
