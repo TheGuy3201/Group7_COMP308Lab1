@@ -12,8 +12,42 @@ import auth from "../lib/auth-helper.js";
 import { read, update } from "./api-user.js";
 import { Navigate, useParams } from "react-router-dom";
 
+<<<<<<< Updated upstream:Group7_COMP308Lab1_Ex2/client/user/EditProfile.jsx
+=======
+const GET_PLAYER = gql`
+  query GetPlayer($playerId: ID!) {
+    player(playerId: $playerId) {
+      playerId
+      username
+      email
+    }
+  }
+`;
+
+const UPDATE_PLAYER = gql`
+  mutation UpdatePlayer(
+    $playerId: ID!
+    $username: String
+    $email: String
+    $password: String
+  ) {
+    updatePlayer(
+      playerId: $playerId
+      username: $username
+      email: $email
+      password: $password
+    ) {
+      playerId
+      username
+      email
+    }
+  }
+`;
+
+>>>>>>> Stashed changes:Group7_COMP308Lab2_Ex2/client/user/EditProfile.jsx
 export default function EditProfile() {
   const { userId } = useParams();
+
   const [values, setValues] = useState({
     name: "",
     password: "",
@@ -23,11 +57,40 @@ export default function EditProfile() {
     NavigateToProfile: false,
   });
 
+<<<<<<< Updated upstream:Group7_COMP308Lab1_Ex2/client/user/EditProfile.jsx
   const jwt = auth.isAuthenticated();
 
   useEffect(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
+=======
+  const { loading, error, data } = useQuery(GET_PLAYER, {
+    variables: { playerId: userId },
+    skip: !userId,
+    onCompleted: (data) => {
+      if (data?.player) {
+        setValues((prev) => ({
+          ...prev,
+          name: data.player.username,
+          email: data.player.email,
+        }));
+      }
+    },
+  });
+
+  const [updatePlayer] = useMutation(UPDATE_PLAYER);
+
+  const clickSubmit = async () => {
+    try {
+      const { data } = await updatePlayer({
+        variables: {
+          playerId: userId,
+          username: values.name,
+          email: values.email,
+          password: values.password || undefined,
+        },
+      });
+>>>>>>> Stashed changes:Group7_COMP308Lab2_Ex2/client/user/EditProfile.jsx
 
     read({ userId }, { t: jwt.token }, signal).then((data) => {
       if (data?.error) {
@@ -79,7 +142,7 @@ export default function EditProfile() {
       }}
     >
       <CardContent>
-        <Typography variant="h6" sx={{ mt: 2, mb: 2, color: "text.primary" }}>
+        <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
           Edit Profile
         </Typography>
 
