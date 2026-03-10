@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { gql, useMutation } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
 
 const baseCard = {
@@ -32,7 +33,46 @@ const submitStyle = {
   fontWeight: 600,
 };
 
-const endpointBase = import.meta.env.VITE_AUTH_API_BASE || "http://localhost:4002";
+const SIGNUP_MUTATION = gql`
+  mutation Signup($username: String!, $email: String!, $password: String!, $role: String) {
+    signup(username: $username, email: $email, password: $password, role: $role) {
+      token
+      user {
+        userId
+        username
+        email
+        role
+        createdAt
+      }
+      message
+    }
+  }
+`;
+
+const LOGIN_MUTATION = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      token
+      user {
+        userId
+        username
+        email
+        role
+        createdAt
+      }
+      message
+    }
+  }
+`;
+
+const LOGOUT_MUTATION = gql`
+  mutation Logout($token: String) {
+    logout(token: $token) {
+      success
+      message
+    }
+  }
+`;
 
 const storeSession = (authResult) => {
   const sessionPayload = {
@@ -46,11 +86,15 @@ const storeSession = (authResult) => {
 
 export default function AuthPage({ mode = "login" }) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "", role: "player" });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [signupMutation, { loading: signupLoading }] = useMutation(SIGNUP_MUTATION);
+  const [loginMutation, { loading: loginLoading }] = useMutation(LOGIN_MUTATION);
+  const [logoutMutation, { loading: logoutLoading }] = useMutation(LOGOUT_MUTATION);
 
   const isRegister = mode === "register";
+  const isLogout = mode === "logout";
+  const loading = signupLoading || loginLoading || logoutLoading;
 
   const onChange = (name) => (event) => {
     setForm((prev) => ({ ...prev, [name]: event.target.value }));
@@ -59,33 +103,67 @@ export default function AuthPage({ mode = "login" }) {
   const onSubmit = async (event) => {
     event.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      const path = isRegister ? "/api/auth/register" : "/api/auth/login";
-      const body = isRegister
-        ? { username: form.username, email: form.email, password: form.password }
-        : { email: form.email, password: form.password };
-
-      const response = await fetch(`${endpointBase}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication request failed");
+      if (isRegister) {
+        const { data } = await signupMutation({
+          variables: {
+            username: form.username,
+            email: form.email,
+            password: form.password,
+            role: form.role,
+          },
+        });
+        storeSession(data.signup);
+      } else {
+        const { data } = await loginMutation({
+          variables: {
+            email: form.email,
+            password: form.password,
+          },
+        });
+        storeSession(data.login);
       }
 
-      storeSession(data);
       navigate("/");
     } catch (submitError) {
       setError(submitError.message);
-    } finally {
-      setLoading(false);
     }
   };
+
+  const onLogout = async () => {
+    setError("");
+    const currentSession = JSON.parse(sessionStorage.getItem("jwt") || "null");
+
+    try {
+      await logoutMutation({
+        variables: {
+          token: currentSession?.token || "",
+        },
+      });
+      sessionStorage.removeItem("jwt");
+      navigate("/");
+    } catch (logoutError) {
+      setError(logoutError.message);
+    }
+  };
+
+  if (isLogout) {
+    return (
+      <div style={baseCard}>
+        <h2 style={{ marginTop: 0, marginBottom: "18px", color: "#22304d" }}>Sign out</h2>
+        <p style={{ color: "#384a6a", marginBottom: "14px" }}>End your current session securely.</p>
+        {error && (
+          <p style={{ color: "#b42318", background: "#fef3f2", padding: "8px", borderRadius: "6px" }}>
+            {error}
+          </p>
+        )}
+        <button type="button" disabled={loading} style={submitStyle} onClick={onLogout}>
+          {loading ? "Signing out..." : "Logout"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={baseCard}>
@@ -104,6 +182,16 @@ export default function AuthPage({ mode = "login" }) {
               required
               style={inputStyle}
             />
+          </label>
+        )}
+
+        {isRegister && (
+          <label style={{ display: "block", marginBottom: "12px", color: "#384a6a" }}>
+            Role
+            <select value={form.role} onChange={onChange("role")} style={inputStyle}>
+              <option value="player">Player</option>
+              <option value="admin">Admin</option>
+            </select>
           </label>
         )}
 

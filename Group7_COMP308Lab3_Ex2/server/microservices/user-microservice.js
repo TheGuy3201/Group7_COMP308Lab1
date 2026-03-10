@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 import configureMongoose from "../../config/mongoose.js";
 import User from "../graphQL/models/user.model.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const app = express();
 const PORT = Number(process.env.USER_SERVICE_PORT || 4003);
@@ -20,7 +20,6 @@ const typeDefs = `#graphql
     userId: ID!
     username: String!
     email: String!
-    password: String!
     role: String!
     createdAt: String!
   }
@@ -35,8 +34,8 @@ const typeDefs = `#graphql
       username: String!
       password: String!
       email: String!
-      role: String!
-      createdAt: String!
+      role: String
+      createdAt: String
     ): User!
 
     updateUser(
@@ -50,8 +49,6 @@ const typeDefs = `#graphql
 
     deleteUser(userId: ID!): Boolean!
     deleteUserByEmail(email: String!): Boolean!
-    addFavouriteGame(userId: ID!, gameId: ID!): User!
-    removeFavouriteGame(userId: ID!, gameId: ID!): User!
   }
 `;
 
@@ -71,7 +68,7 @@ const resolvers = {
         const salt = await bcrypt.genSalt(10);
         updateData.password = await bcrypt.hash(password, salt);
       }
-      return await User.findByIdAndUpdate(userId, updateData, { new: true }).populate("favouriteGames");
+      return await User.findByIdAndUpdate(userId, updateData, { new: true });
     },
     deleteUser: async (_, { userId }) => {
       const result = await User.findByIdAndDelete(userId);
@@ -80,20 +77,6 @@ const resolvers = {
     deleteUserByEmail: async (_, { email }) => {
       const result = await User.findOneAndDelete({ email });
       return !!result;
-    },
-    addFavouriteGame: async (_, { userId, gameId }) => {
-      return await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { favouriteGames: gameId } },
-        { new: true }
-      ).populate("favouriteGames");
-    },
-    removeFavouriteGame: async (_, { userId, gameId }) => {
-      return await User.findByIdAndUpdate(
-        userId,
-        { $pull: { favouriteGames: gameId } },
-        { new: true }
-      ).populate("favouriteGames");
     },
   },
 };

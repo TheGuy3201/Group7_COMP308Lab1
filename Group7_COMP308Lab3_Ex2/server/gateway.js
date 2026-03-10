@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const app = express();
 const PORT = Number(process.env.GATEWAY_PORT || 4002);
@@ -47,8 +47,14 @@ app.post("/api/auth/register", (req, res) => {
   return proxyJsonRequest(`${AUTH_SERVICE_URL}/api/auth/register`, req, res);
 });
 
+app.post("/api/auth/logout", (req, res) => {
+  return proxyJsonRequest(`${AUTH_SERVICE_URL}/api/auth/logout`, req, res);
+});
+
 const routeGraphqlTarget = (query = "") => {
   const normalized = String(query);
+
+  const authOps = ["signup", "login(", "logout", "health"];
 
   const userOps = [
     "users",
@@ -57,8 +63,6 @@ const routeGraphqlTarget = (query = "") => {
     "updateUser",
     "deleteUser",
     "deleteUserByEmail",
-    "addFavouriteGame",
-    "removeFavouriteGame",
   ];
 
   const gameOps = [
@@ -74,6 +78,10 @@ const routeGraphqlTarget = (query = "") => {
     "gamesByYear",
     "searchGames",
   ];
+
+  if (authOps.some((op) => normalized.includes(op))) {
+    return `${AUTH_SERVICE_URL}/graphql`;
+  }
 
   if (userOps.some((op) => normalized.includes(op))) {
     return `${USER_SERVICE_URL}/graphql`;

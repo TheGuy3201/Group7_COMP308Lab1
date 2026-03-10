@@ -17,11 +17,11 @@
     "dev": "npm run dev:all",
     "dev:shell": "npm run dev --prefix client/shell-app",
     "dev:auth-app": "npm run dev --prefix client/auth-app",
-    "dev:uploads": "nodemon server.js",
-    "dev:auth-service": "nodemon server/microservices/auth-microservice.js",
-    "dev:user-service": "nodemon server/microservices/user-microservice.js",
-    "dev:game-service": "nodemon server/microservices/game-microservice.js",
-    "dev:gateway": "nodemon server/gateway.js",
+    "dev:uploads": "nodemon -q server.js",
+    "dev:auth-service": "nodemon -q server/microservices/auth-microservice.js",
+    "dev:user-service": "nodemon -q server/microservices/user-microservice.js",
+    "dev:game-service": "nodemon -q server/microservices/game-microservice.js",
+    "dev:gateway": "nodemon -q server/gateway.js",
     "dev:all": "concurrently \"npm run dev:uploads\" \"npm run dev:auth-service\" \"npm run dev:user-service\" \"npm run dev:game-service\" \"npm run dev:gateway\" \"npm run dev:auth-app\" \"npm run dev:shell\"",
     "install:all": "npm install; npm install --prefix client/shell-app; npm install --prefix client/auth-app",
     "build": "vite build",
@@ -46,7 +46,6 @@
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "method-override": "^3.0.0",
-    "mongoose": "^8.23.0",
-    "multer": "^2.1.1"
+    "mongoose": "^8.23.0"
   }
 }

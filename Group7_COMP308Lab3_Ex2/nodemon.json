@@ -1,0 +1,14 @@
+{
+  "watch": ["server", "config", "server.js"],
+  "ext": "js,mjs,cjs,json",
+  "ignore": [
+    "client/**",
+    "public/**",
+    "**/dist/**",
+    "**/.vite/**",
+    "**/node_modules/**",
+    "*.md"
+  ],
+  "delay": "300ms",
+  "verbose": false
+}

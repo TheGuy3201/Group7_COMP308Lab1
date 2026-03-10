@@ -9,6 +9,7 @@ export default function App() {
         <Route path="/" element={<AuthPage mode="login" />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/logout" element={<AuthPage mode="logout" />} />
       </Routes>
     </BrowserRouter>
   );

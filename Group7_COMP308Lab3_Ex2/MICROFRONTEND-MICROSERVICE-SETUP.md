@@ -1,5 +1,5 @@
 # Microservice + Microfrontend Layout (Federation)
-
+####PLEASE CHANGE YOUR .env URI to end with "assignment3_ex2"####
 This project now includes a split structure similar to your reference:
 
 - `client/shell-app` -> host app (routes, main domain UI, consumes remote auth app)
