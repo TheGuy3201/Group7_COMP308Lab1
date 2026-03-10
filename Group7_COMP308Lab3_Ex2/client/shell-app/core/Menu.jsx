@@ -6,13 +6,12 @@ import IconButton from "@mui/material/IconButton";
 import HomeIcon from "@mui/icons-material/Home";
 import Button from "@mui/material/Button";
 import auth from "../lib/auth-helper";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const isActive = (location, path) =>
   location.pathname === path ? "#ff4081" : "#ffffff";
 
 export default function Menu() {
-  const navigate = useNavigate();
   const location = useLocation();
   const authData = auth.isAuthenticated();
 
@@ -59,11 +58,6 @@ export default function Menu() {
                 Add Game
               </Button>
             </Link>
-            <Link to="/favorites">
-              <Button sx={{ color: isActive(location, "/favorites") }}>
-                Favorites
-              </Button>
-            </Link>
             <Link to={`/user/${authData?.user?.userId}`}>
               <Button
                 sx={{
@@ -76,14 +70,9 @@ export default function Menu() {
                 My Profile
               </Button>
             </Link>
-            <Button
-              sx={{ color: "#ffffff" }}
-              onClick={() => {
-                auth.clearJWT(() => navigate("/"));
-              }}
-            >
-              Sign out
-            </Button>
+            <Link to="/logout">
+              <Button sx={{ color: isActive(location, "/logout") }}>Sign out</Button>
+            </Link>
           </>
         )}
       </Toolbar>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, gql } from "@apollo/client";
+import { useQuery, gql } from "@apollo/client";
 import {
   Paper,
   Table,
@@ -13,17 +13,11 @@ import {
   Chip,
   Rating,
   CircularProgress,
-  IconButton,
-  Tooltip,
-  Snackbar,
-  Alert,
   TextField,
 } from "@mui/material";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import auth from "../lib/auth-helper.js";
 
 const GET_GAMES = gql`
   query GetGames {
@@ -36,17 +30,6 @@ const GET_GAMES = gql`
       developer
       rating
       description
-    }
-  }
-`;
-
-const ADD_FAVORITE_GAME = gql`
-  mutation AddFavouriteGame($userId: ID!, $gameId: ID!) {
-    addFavouriteGame(userId: $userId, gameId: $gameId) {
-      userId
-      favouriteGames {
-        gameId
-      }
     }
   }
 `;
@@ -65,17 +48,10 @@ const SEARCH_GAMES = gql`
 
 export default function Games() {
   const navigate = useNavigate();
-  const authData = auth.isAuthenticated();
 
   const { loading, data } = useQuery(GET_GAMES);
-  const [addFavorite] = useMutation(ADD_FAVORITE_GAME);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
 
   const { data: searchData } = useQuery(SEARCH_GAMES, {
     variables: { searchTerm },
@@ -85,46 +61,6 @@ export default function Games() {
   const games = searchTerm
     ? searchData?.searchGames || []
     : data?.games || [];
-
-  const handleAddToCollection = async (e, gameId) => {
-    e.stopPropagation();
-
-    if (!authData) {
-      setSnackbar({
-        open: true,
-        message: "Please log in to add to favorites!",
-        severity: "warning",
-      });
-      return;
-    }
-
-    try {
-      await addFavorite({
-        variables: {
-          userId: authData.user.userId,
-          gameId,
-        },
-      });
-
-      setSnackbar({
-        open: true,
-        message: "Added to favorites!",
-        severity: "success",
-      });
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: `Error: ${err.message}`,
-        severity: "error",
-      });
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  
 
   return (
     <motion.div
@@ -287,7 +223,7 @@ export default function Games() {
                       borderBottom: "1px solid rgba(100, 200, 255, 0.3)",
                     }}
                   >
-                    Actions
+                    View
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -396,20 +332,8 @@ export default function Games() {
                         {game.description || "No description available"}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      <Tooltip title="Add to My Collection">
-                        <IconButton
-                          onClick={(e) => handleAddToCollection(e, game.gameId)}
-                          sx={{
-                            color: "#64c8ff",
-                            "&:hover": {
-                              backgroundColor: "rgba(100, 200, 255, 0.2)",
-                            },
-                          }}
-                        >
-                          <AddCircleOutlineIcon />
-                        </IconButton>
-                      </Tooltip>
+                    <TableCell sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.875rem" }}>
+                      Open details
                     </TableCell>
                   </TableRow>
                 ))}
@@ -418,17 +342,6 @@ export default function Games() {
           </TableContainer>
         )}
       </Box>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </motion.div>
   );
 }

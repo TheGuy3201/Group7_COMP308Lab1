@@ -11,12 +11,26 @@ export default defineConfig({
       exposes: {
         "./AuthPage": "./src/AuthPage.jsx",
       },
-      shared: ["react", "react-dom", "react-router-dom"],
+      shared: {
+        react: { singleton: true, requiredVersion: "^19.1.0" },
+        "react-dom": { singleton: true, requiredVersion: "^19.1.0" },
+        "react-router-dom": { singleton: true, requiredVersion: "^7.13.0" },
+        "@apollo/client": { singleton: true, requiredVersion: "^3.11.3" },
+        graphql: { singleton: true, requiredVersion: "^16.12.0" },
+      },
     }),
   ],
   build: {
     target: "esnext",
     minify: false,
     cssCodeSplit: false,
+  },
+  server: {
+    port: 5175,
+    strictPort: true,
+  },
+  preview: {
+    port: 5175,
+    strictPort: true,
   },
 });

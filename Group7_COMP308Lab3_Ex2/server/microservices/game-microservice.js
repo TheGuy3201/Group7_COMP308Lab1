@@ -5,7 +5,7 @@ import { ApolloServer } from "@apollo/server";
 import configureMongoose from "../../config/mongoose.js";
 import Game from "../graphQL/models/game.model.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const app = express();
 const PORT = Number(process.env.GAME_SERVICE_PORT || 4004);

@@ -18,11 +18,12 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const ADD_USER = gql`
-  mutation AddUser($username: String!, $password: String!, $email: String!) {
-    addUser(username: $username, password: $password, email: $email) {
+  mutation AddUser($username: String!, $password: String!, $email: String!, $role: String) {
+    addUser(username: $username, password: $password, email: $email, role: $role) {
       userId
       username
       email
+      role
     }
   }
 `;
@@ -32,6 +33,7 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
+    role: "player",
     error: "",
   });
 
@@ -58,12 +60,13 @@ export default function Register() {
           username: values.name,
           email: values.email,
           password: values.password,
+          role: values.role,
         },
       });
 
       if (data && data.addUser) {
         setOpen(true);
-        setValues({ name: "", email: "", password: "", error: "" });
+        setValues({ name: "", email: "", password: "", role: "player", error: "" });
       }
     } catch (err) {
       setValues({ ...values, error: err.message });
@@ -164,6 +167,31 @@ export default function Register() {
               "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
             }}
           />
+
+          <TextField
+            select
+            label="Role"
+            value={values.role}
+            onChange={handleChange("role")}
+            margin="normal"
+            SelectProps={{ native: true }}
+            sx={{
+              width: "100%",
+              mb: 2,
+              "& .MuiOutlinedInput-root": {
+                color: "#fff",
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(10px)",
+                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.2)" },
+                "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.4)" },
+                "&.Mui-focused fieldset": { borderColor: "rgba(100, 200, 255, 0.6)" },
+              },
+              "& .MuiInputLabel-root": { color: "rgba(255, 255, 255, 0.7)" },
+            }}
+          >
+            <option value="player">Player</option>
+            <option value="admin">Admin</option>
+          </TextField>
 
           {values.error && (
             <Box

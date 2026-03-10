@@ -1,51 +1,19 @@
 import dotenv from 'dotenv';
-dotenv.config(); // Load environment variables from .env file
+dotenv.config({ quiet: true }); // Load environment variables from .env file
 import express from 'express';
 import { ApolloServer } from '@apollo/server';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import multer from 'multer';
 import configureMongoose from './config/mongoose.js';
 import typeDefs from './server/graphQL/typeDefs.js';
 import resolvers from './server/graphQL/resolvers.js';
-import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 4000;
-
-const avatarsPath = path.join(__dirname, "public/avatars");
-
-// Ensure folder exists (VERY IMPORTANT)
-if (!fs.existsSync(avatarsPath)) {
-  fs.mkdirSync(avatarsPath, { recursive: true });
-}
-
-// Configure multer for avatar uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, avatarsPath);   // Absolute path
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files allowed!'));
-    }
-  }
-});
 
 const startServer = async () => {
   try {
@@ -63,23 +31,6 @@ const startServer = async () => {
     // Middleware
     app.use(cors());
     app.use(express.json());
-    
-    // Serve static files from public/avatars
-    app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
-    
-    // File upload endpoint
-    app.post('/upload/avatar', upload.single('avatar'), (req, res) => {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-      
-      const avatarURL = `http://localhost:${PORT}/avatars/${req.file.filename}`;
-      res.json({ 
-        success: true,
-        avatarURL,
-        filename: req.file.filename 
-      });
-    });
     
     // GraphQL endpoint - Manual integration
     app.post('/graphql', async (req, res) => {
@@ -119,8 +70,6 @@ const startServer = async () => {
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 GraphQL server ready at http://localhost:${PORT}/graphql`);
-      console.log(`📁 Avatar uploads available at http://localhost:${PORT}/upload/avatar`);
-      console.log(`🖼️  Avatars served from http://localhost:${PORT}/avatars/`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

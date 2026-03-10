@@ -8,7 +8,6 @@ const typeDefs = `#graphql
     userId: ID!
     username: String!
     email: String!
-    password: String!
     role: String!
     createdAt: String!
   }
@@ -47,8 +46,8 @@ const typeDefs = `#graphql
       username: String!
       password: String!
       email: String!
-      role: String!
-      createdAt: String!
+      role: String
+      createdAt: String
     ): User!
     
     updateUser(
@@ -88,9 +87,6 @@ const typeDefs = `#graphql
 
     deleteGame(gameId: ID!): Boolean!
     deleteGameByTitle(title: String!): Boolean!
-
-    addFavouriteGame(userId: ID!, gameId: ID!): User!
-    removeFavouriteGame(userId: ID!, gameId: ID!): User!
   }
 `;  
 

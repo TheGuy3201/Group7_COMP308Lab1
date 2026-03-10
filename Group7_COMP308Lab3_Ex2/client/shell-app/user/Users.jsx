@@ -3,15 +3,12 @@ import { useQuery, gql } from '@apollo/client';
 import Paper from '@mui/material/Paper';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import ListItemText from '@mui/material/ListItemText';
 import Link from '@mui/material/Link';
-import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import ArrowForward from '@mui/icons-material/ArrowForward';
-import Person from '@mui/icons-material/Person';
 import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -22,6 +19,7 @@ const GET_USERS = gql`
       userId
       username
       email
+      role
     }
   }
 `;
@@ -84,20 +82,9 @@ export default function Users() {
                     "&:hover": {
                       backgroundColor: "rgba(100, 200, 255, 0.15)",
                     },
+                    pl: 2,
                   }}
                 >
-                  <ListItemAvatar>
-                    <Avatar
-                      sx={{
-                        backgroundColor: "rgba(100, 200, 255, 0.4)",
-                        color: "#fff",
-                        fontWeight: 600,
-                        border: "2px solid rgba(100, 200, 255, 0.6)",
-                      }}
-                    >
-                      {item.username.charAt(0).toUpperCase()}
-                    </Avatar>
-                  </ListItemAvatar>
                   <ListItemText
                     primary={
                       <Typography sx={{ color: "#fff", fontWeight: 500 }}>
@@ -106,7 +93,7 @@ export default function Users() {
                     }
                     secondary={
                       <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)" }}>
-                        {item.email}
+                        {item.email} • Role: {item.role}
                       </Typography>
                     }
                   />

@@ -10,11 +10,22 @@ import EditProfile from "./user/EditProfile.jsx";
 import Games from "./game/games.jsx";
 import AddGame from "./game/addGame.jsx";
 import GameDetails from "./game/gameDetails.jsx";
-import Favorites from "./game/Favorites.jsx";
 
 import Menu from "./core/Menu";
 
-const RemoteAuthPage = lazy(() => import("authApp/AuthPage"));
+const AuthRemoteUnavailable = ({ mode }) => (
+  <div style={{ padding: 24 }}>
+    <h2 style={{ marginTop: 0 }}>Authentication service unavailable</h2>
+    <p>
+      Unable to load remote auth page for <strong>{mode}</strong>. Ensure `client/auth-app` is running on
+      `http://localhost:5175`.
+    </p>
+  </div>
+);
+
+const RemoteAuthPage = lazy(() =>
+  import("authApp/AuthPage").catch(() => ({ default: AuthRemoteUnavailable }))
+);
 
 const Particles = () => {
   const particlesRef = useRef();
@@ -156,15 +167,15 @@ function MainRouter() {
              </Suspense>
            }
          />
+         <Route
+           path="/logout"
+           element={
+             <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication...</div>}>
+               <RemoteAuthPage mode="logout" />
+             </Suspense>
+           }
+         />
         
-        <Route
-          path="/favorites"
-          element={
-            <PrivateRoute>
-              <Favorites />
-            </PrivateRoute>
-          }
-        />
         <Route
           path="/user/edit/:userId"
           element={

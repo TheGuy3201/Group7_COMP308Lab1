@@ -4,11 +4,15 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5175",
+    "dev": "npm run serve:mf",
+    "dev:local": "vite --port 5175 --strictPort",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve:mf": "vite build --logLevel silent && vite preview --port 5175 --strictPort --logLevel error"
   },
   "dependencies": {
+    "@apollo/client": "^3.11.3",
+    "graphql": "^16.12.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.13.0"

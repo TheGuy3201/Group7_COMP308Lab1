@@ -73,7 +73,7 @@ const resolvers = {
         userId,
         updateData,
         { new: true }
-      ).populate('favouriteGames');
+      );
     },
     deleteUser: async (_, { userId }) => {
       const result = await User.findByIdAndDelete(userId);
@@ -111,22 +111,8 @@ const resolvers = {
       const result = await Game.findOneAndDelete({ title });
       return !!result;
     },
-    addFavouriteGame: async (_, { userId, gameId }) => {
-      return await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { favouriteGames: gameId } },
-        { new: true }
-      ).populate('favouriteGames');
-    },
-    removeFavouriteGame: async (_, { userId, gameId }) => {
-      return await User.findByIdAndUpdate(
-        userId,
-        { $pull: { favouriteGames: gameId } },
-        { new: true }
-      ).populate('favouriteGames');
-    },
     login: async (_, { email, password }) => {
-      const user = await User.findOne({ email }).populate('favouriteGames');
+      const user = await User.findOne({ email });
       
       if (!user) {
         throw new Error('Invalid email or password');

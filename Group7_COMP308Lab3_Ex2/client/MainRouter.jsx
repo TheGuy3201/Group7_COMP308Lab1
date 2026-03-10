@@ -12,7 +12,6 @@ import EditProfile from "./user/EditProfile.jsx";
 import Games from "./game/games.jsx";
 import AddGame from "./game/addGame.jsx";
 import GameDetails from "./game/gameDetails.jsx";
-import Favorites from "./game/Favorites.jsx";
 
 import Menu from "./core/Menu";
 
@@ -143,14 +142,6 @@ function MainRouter() {
          <Route path="/register" element={<Register />} />
          <Route path="/login" element={<Login />} />
         
-        <Route
-          path="/favorites"
-          element={
-            <PrivateRoute>
-              <Favorites />
-            </PrivateRoute>
-          }
-        />
         <Route
           path="/user/edit/:userId"
           element={

@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, desc: "Unique username for each user" },
   email: { type: String, required: true, unique: true, desc: "Users email address" },
   password: { type: String, required: true, desc: "User password stored securely (hashed)." },
-  role: { type: String, required: true, default: 'User', desc: "Defines user permissions. Allowed values: 'user', 'admin'" },
+  role: { type: String, required: true, enum: ['player', 'admin'], default: 'player', desc: "Defines user permissions. Allowed values: 'player', 'admin'" },
   createdAt: { type: Date, default: Date.now, desc: "Timestamp for when the user was created" },
 });
 
