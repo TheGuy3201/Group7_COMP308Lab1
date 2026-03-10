@@ -1,24 +1,17 @@
 // resolvers.js Code for the resolvers of the GraphQL server
-import Player from './models/player.model.js';
+import User from './models/user.model.js';
 import Game from './models/game.model.js';
 import bcrypt from 'bcrypt';
 
-const DEFAULT_AVATAR_IMG = '/assets/images/game.png';
-
 const resolvers = {
-  Player: {
-    avatarIMG: (player) => player.avatarIMG || DEFAULT_AVATAR_IMG,
-  },
-
   Query: {
-
-    // -----PLAYERS-----
-    players: async () => {
-      return await Player.find().populate('favouriteGames');
+    // -----USERS-----
+    users: async () => {
+      return await User.find();
     },
 
-    player: async (_, { playerId }) => {
-      return await Player.findById(playerId).populate('favouriteGames');
+    user: async (_, { userId }) => {
+      return await User.findById(userId);
     },
 
     // -----GAMES-----
@@ -59,35 +52,35 @@ const resolvers = {
   },
 
   Mutation: {
-    // -----PLAYERS-----
-    addPlayer: async (_, { username, password, email, avatarIMG, favouriteGames }) => {
-      const newPlayer = new Player({
+    // -----USERS-----
+    addUser: async (_, { username, password, email, role, createdAt }) => {
+      const newUser = new User({
         username,
         password,
         email,
-        avatarIMG: avatarIMG || DEFAULT_AVATAR_IMG,
-        favouriteGames: favouriteGames || []
+        role,
+        createdAt
       });
-      return await newPlayer.save();
+      return await newUser.save();
     },
-    updatePlayer: async (_, { playerId, password, username, email, avatarIMG, favouriteGames }) => {
-      const updateData = { username, email, avatarIMG, favouriteGames };
+    updateUser: async (_, { userId, password, username, email, role, createdAt }) => {
+      const updateData = { username, email, role, createdAt };
       if (password) {
         const salt = await bcrypt.genSalt(10);
         updateData.password = await bcrypt.hash(password, salt);
       }
-      return await Player.findByIdAndUpdate(
-        playerId,
+      return await User.findByIdAndUpdate(
+        userId,
         updateData,
         { new: true }
       ).populate('favouriteGames');
     },
-    deletePlayer: async (_, { playerId }) => {
-      const result = await Player.findByIdAndDelete(playerId);
+    deleteUser: async (_, { userId }) => {
+      const result = await User.findByIdAndDelete(userId);
       return !!result;
     },
-    deletePlayerByEmail: async (_, { email }) => {
-      const result = await Player.findOneAndDelete({ email });
+    deleteUserByEmail: async (_, { email }) => {
+      const result = await User.findOneAndDelete({ email });
       return !!result;
     },
     //-----GAMES-----
@@ -118,35 +111,35 @@ const resolvers = {
       const result = await Game.findOneAndDelete({ title });
       return !!result;
     },
-    addFavouriteGame: async (_, { playerId, gameId }) => {
-      return await Player.findByIdAndUpdate(
-        playerId,
+    addFavouriteGame: async (_, { userId, gameId }) => {
+      return await User.findByIdAndUpdate(
+        userId,
         { $addToSet: { favouriteGames: gameId } },
         { new: true }
       ).populate('favouriteGames');
     },
-    removeFavouriteGame: async (_, { playerId, gameId }) => {
-      return await Player.findByIdAndUpdate(
-        playerId,
+    removeFavouriteGame: async (_, { userId, gameId }) => {
+      return await User.findByIdAndUpdate(
+        userId,
         { $pull: { favouriteGames: gameId } },
         { new: true }
       ).populate('favouriteGames');
     },
     login: async (_, { email, password }) => {
-      const player = await Player.findOne({ email }).populate('favouriteGames');
+      const user = await User.findOne({ email }).populate('favouriteGames');
       
-      if (!player) {
+      if (!user) {
         throw new Error('Invalid email or password');
       }
       
-      const isValidPassword = await player.comparePassword(password);
+      const isValidPassword = await user.comparePassword(password);
       
       if (!isValidPassword) {
         throw new Error('Invalid email or password');
       }
       
       return {
-        player,
+        user: user,
         message: 'Login successful'
       };
     },

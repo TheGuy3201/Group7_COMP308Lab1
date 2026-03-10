@@ -10,10 +10,20 @@
     "@babel/preset-env": "^7.27.2",
     "@babel/preset-react": "^7.27.1",
     "babel-loader": "^10.0.0",
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.10"
   },
   "scripts": {
-    "dev": "concurrently 'vite' \"nodemon server.js\"",
+    "dev": "npm run dev:all",
+    "dev:shell": "npm run dev --prefix client/shell-app",
+    "dev:auth-app": "npm run dev --prefix client/auth-app",
+    "dev:uploads": "nodemon server.js",
+    "dev:auth-service": "nodemon server/microservices/auth-microservice.js",
+    "dev:user-service": "nodemon server/microservices/user-microservice.js",
+    "dev:game-service": "nodemon server/microservices/game-microservice.js",
+    "dev:gateway": "nodemon server/gateway.js",
+    "dev:all": "concurrently \"npm run dev:uploads\" \"npm run dev:auth-service\" \"npm run dev:user-service\" \"npm run dev:game-service\" \"npm run dev:gateway\" \"npm run dev:auth-app\" \"npm run dev:shell\"",
+    "install:all": "npm install; npm install --prefix client/shell-app; npm install --prefix client/auth-app",
     "build": "vite build",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"

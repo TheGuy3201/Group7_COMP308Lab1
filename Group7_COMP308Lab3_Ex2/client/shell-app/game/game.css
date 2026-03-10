@@ -1,0 +1,130 @@
+/* Game Form Container */
+.game-form-container {
+  padding: 24px;
+  max-width: 800px;
+  margin: auto;
+}
+
+/* Glass Card */
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37) !important;
+  border-radius: 16px !important;
+}
+
+.glass-card-content {
+  padding: 32px !important;
+}
+
+/* Typography */
+.game-form-title {
+  margin-bottom: 24px !important;
+  color: #e0e0ff !important;
+  font-weight: 600 !important;
+}
+
+.game-form-caption {
+  margin-top: 16px !important;
+  display: block !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Alerts */
+.alert-success {
+  margin-bottom: 24px !important;
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  border-color: rgba(76, 175, 80, 0.5) !important;
+  color: #c8e6c9 !important;
+}
+
+.alert-error {
+  margin-bottom: 24px !important;
+  background-color: rgba(244, 67, 54, 0.2) !important;
+  border-color: rgba(244, 67, 54, 0.5) !important;
+  color: #ffcdd2 !important;
+}
+
+/* Text Fields */
+.glass-textfield .MuiOutlinedInput-root {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px);
+}
+
+.glass-textfield .MuiOutlinedInput-root fieldset {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.glass-textfield .MuiOutlinedInput-root:hover fieldset {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-textfield .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: rgba(100, 200, 255, 0.6) !important;
+}
+
+.glass-textfield .MuiInputBase-input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+  opacity: 1 !important;
+}
+
+.glass-textfield .MuiInputLabel-root {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Slider */
+.rating-slider-container {
+  padding: 0 16px 16px !important;
+  padding-top: 32px !important;
+}
+
+.rating-slider .MuiSlider-root {
+  color: rgba(100, 200, 255, 0.8) !important;
+}
+
+.rating-slider .MuiSlider-markLabel {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.rating-label {
+  background-color: transparent !important;
+  padding: 0 8px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Buttons Container */
+.button-container {
+  margin-top: 24px !important;
+  display: flex !important;
+  gap: 16px !important;
+}
+
+.button-wrapper {
+  flex: 1;
+}
+
+/* Primary Button */
+.primary-button {
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 15px rgba(63, 81, 181, 0.4) !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px !important;
+}
+
+/* Outlined Button */
+.outlined-button {
+  backdrop-filter: blur(10px) !important;
+  border-color: rgba(63, 81, 181, 0.6) !important;
+  color: #fff !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  letter-spacing: 1px !important;
+}
+
+.outlined-button:hover {
+  border-color: rgba(63, 81, 181, 1) !important;
+  background-color: rgba(63, 81, 181, 0.1) !important;
+}
