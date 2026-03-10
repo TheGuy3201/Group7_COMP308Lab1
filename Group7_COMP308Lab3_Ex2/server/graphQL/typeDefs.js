@@ -4,16 +4,17 @@
 // The schema is defined using the GraphQL schema definition 
 // language (SDL).
 const typeDefs = `#graphql
-  type Player {
-    playerId: ID!
+  type User {
+    userId: ID!
     username: String!
     email: String!
-    avatarIMG: String!
-    favouriteGames: [Game!]
+    password: String!
+    role: String!
+    createdAt: String!
   }
 
   type AuthPayload {
-    player: Player!
+    user: User!
     message: String!
   }
 
@@ -29,8 +30,8 @@ const typeDefs = `#graphql
   }
 
   type Query {
-    players: [Player!]!
-    player(playerId: ID!): Player
+    users: [User!]!
+    user(userId: ID!): User
     games: [Game!]!
     game(gameId: ID!): Game
     gamesByGenre(genre: String!): [Game!]!
@@ -42,27 +43,27 @@ const typeDefs = `#graphql
   }
 
   type Mutation {
-    addPlayer(
+    addUser(
       username: String!
       password: String!
       email: String!
-      avatarIMG: String
-      favouriteGames: [ID!]
-    ): Player!
+      role: String!
+      createdAt: String!
+    ): User!
     
-    updatePlayer(
-      playerId: ID!
+    updateUser(
+      userId: ID!
       username: String
       email: String
       password: String
-      avatarIMG: String
-      favouriteGames: [ID!]
-    ): Player!
+      role: String
+      createdAt: String
+    ): User!
     
     login(email: String!, password: String!): AuthPayload!
 
-    deletePlayer(playerId: ID!): Boolean!
-    deletePlayerByEmail(email: String!): Boolean!
+    deleteUser(userId: ID!): Boolean!
+    deleteUserByEmail(email: String!): Boolean!
 
     addGame(
       title: String!
@@ -88,8 +89,8 @@ const typeDefs = `#graphql
     deleteGame(gameId: ID!): Boolean!
     deleteGameByTitle(title: String!): Boolean!
 
-    addFavouriteGame(playerId: ID!, gameId: ID!): Player!
-    removeFavouriteGame(playerId: ID!, gameId: ID!): Player!
+    addFavouriteGame(userId: ID!, gameId: ID!): User!
+    removeFavouriteGame(userId: ID!, gameId: ID!): User!
   }
 `;  
 

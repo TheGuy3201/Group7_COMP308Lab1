@@ -18,6 +18,7 @@ const GET_USER = gql`
       userId
       username
       email
+      role
     }
   }
 `;
@@ -27,14 +28,12 @@ const UPDATE_USER = gql`
     $userId: ID!
     $username: String
     $email: String
-    $role: String
     $password: String
   ) {
     updateUser(
       userId: $userId
       username: $username
       email: $email
-      role: $role
       password: $password
     ) {
       userId
@@ -52,6 +51,7 @@ export default function EditProfile() {
     name: "",
     password: "",
     email: "",
+    role: "",
     error: "",
     NavigateToProfile: false,
   });
@@ -60,11 +60,12 @@ export default function EditProfile() {
     variables: { userId: userId },
     skip: !userId,
     onCompleted: (data) => {
-      if (data?.user) {
+      if (data?.role) {
         setValues((prev) => ({
           ...prev,
           name: data.user.username,
           email: data.user.email,
+          role: data.user.role,
         }));
       }
     },
@@ -145,6 +146,17 @@ export default function EditProfile() {
           label="Password"
           value={values.password}
           onChange={handleChange("password")}
+          margin="normal"
+          sx={{ mx: 1, width: 300 }}
+        />
+        <br />
+
+        <TextField
+          id="role"
+          type="text"
+          label="Role"
+          value={values.role}
+          onChange={handleChange("role")}
           margin="normal"
           sx={{ mx: 1, width: 300 }}
         />

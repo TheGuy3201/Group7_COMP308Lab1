@@ -20,7 +20,7 @@ export default function Menu() {
     <AppBar position="static">
       <Toolbar sx={{ display: "flex", gap: 2, alignItems: "center" }}>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Game Library Management System
+          Game Progress Tracker
         </Typography>
 
         <Link to="/">
