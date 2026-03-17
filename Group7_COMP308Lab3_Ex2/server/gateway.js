@@ -66,17 +66,14 @@ const routeGraphqlTarget = (query = "") => {
   ];
 
   const gameOps = [
-    "games",
-    "game(",
-    "addGame",
-    "updateGame",
-    "deleteGame",
-    "deleteGameByTitle",
-    "gamesByGenre",
-    "gamesByPlatform",
-    "gamesByDeveloper",
-    "gamesByYear",
-    "searchGames",
+    "gameProgressList",
+    "gameProgress(",
+    "gameProgressByUser",
+    "leaderboard",
+    "addGameProgress",
+    "updateGameProgress",
+    "deleteGameProgress",
+    "deleteGameProgressByUser",
   ];
 
   if (authOps.some((op) => normalized.includes(op))) {
@@ -99,7 +96,7 @@ app.post("/graphql", (req, res) => {
   if (!targetUrl) {
     return res.status(400).json({
       message:
-        "Gateway could not route this GraphQL operation. Ensure it targets user or game microservices.",
+        "Gateway could not route this GraphQL operation. Ensure it targets user or game progress microservices.",
     });
   }
 

@@ -28,8 +28,8 @@ export default function Menu() {
           </IconButton>
         </Link>
 
-        <Link to="/games">
-          <Button sx={{ color: isActive(location, "/games") }}>Games</Button>
+        <Link to="/progress">
+          <Button sx={{ color: isActive(location, "/progress") }}>Progress Hub</Button>
         </Link>
 
         <Link to="/users">
@@ -53,9 +53,9 @@ export default function Menu() {
 
         {authData && (
           <>
-            <Link to="/games/new">
-              <Button sx={{ color: isActive(location, "/games/new") }}>
-                Add Game
+            <Link to="/progress">
+              <Button sx={{ color: isActive(location, "/progress") }}>
+                My Progress
               </Button>
             </Link>
             <Link to={`/user/${authData?.user?.userId}`}>

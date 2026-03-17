@@ -1,5 +1,5 @@
-import React from "react";
-import { gql, useQuery } from "@apollo/client";
+import React, { useEffect, useState } from "react";
+import { gql, useQuery } from '@apollo/client';
 import {
   Card,
   CardContent,
@@ -10,8 +10,10 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import {Canvas} from "@react-three/fiber";
+import { OrbitControls, Environment } from "@react-three/drei";
 
-const GET_LEADERBOARD = gql`
+const GET_LEADERBOARD_SNAPSHOT = gql`
   query GetLeaderboardSnapshot($limit: Int) {
     leaderboard(limit: $limit) {
       progressId
@@ -27,17 +29,8 @@ const GET_LEADERBOARD = gql`
   }
 `;
 
-const toDisplayDate = (isoDate) => {
-  if (!isoDate) {
-    return "N/A";
-  }
-
-  const date = new Date(isoDate);
-  return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
-};
-
 const Home = () => {
-    const { loading, error, data } = useQuery(GET_LEADERBOARD, {
+    const { loading, error, data } = useQuery(GET_LEADERBOARD_SNAPSHOT, {
       variables: { limit: 6 },
       pollInterval: 4000,
       fetchPolicy: "network-only",
@@ -67,25 +60,25 @@ const Home = () => {
         >
           Live Progress Snapshot
         </Typography>
-
-        <Typography sx={{ px: 2.5, pb: 1.5, color: "rgba(224,224,255,0.8)" }}>
-          Auto-refreshing every 4 seconds from the Game Progress microservice.
+        <Typography
+          variant="body2"
+          sx={{ px: 2.5, color: "#aaa", mb: 2 }}
+        >
+          Auto-refreshes every 4 seconds
         </Typography>
 
         {error ? (
           <Typography sx={{ p: 3, color: "#ff5555" }}>
-            Error loading progress data: {error.message}
+            Error loading leaderboard: {error.message}
           </Typography>
         ) : loading ? (
           <Typography sx={{ p: 3, color: "#ccc" }}>
-            Loading live progress...
+            Loading leaderboard...
           </Typography>
         ) : leaderboard.length === 0 ? (
-          <Box sx={{ p: 3 }}>
-            <Typography sx={{ color: "#ccc" }}>
-              No progress records yet. Open the Progress Hub to create the first player snapshot.
-            </Typography>
-          </Box>
+          <Typography sx={{ p: 3, color: "#ccc" }}>
+            No progress records found. Start tracking your progress!
+          </Typography>
         ) : (
           <Box
             sx={{
@@ -98,46 +91,32 @@ const Home = () => {
             {leaderboard.map((entry, index) => (
               <motion.div
                 key={entry.progressId}
-                whileHover={{ y: -8 }}
+                whileHover={{ y: -4 }}
               >
                 <Card
-                  component={Link}
-                  to="/progress"
                   sx={{
-                    minWidth: 260,
-                    textDecoration: "none",
-                    backgroundColor: "rgba(255,255,255,0.1)",
+                    minWidth: 240,
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                    borderLeft: "3px solid #49dcb1",
                   }}
                 >
                   <CardContent>
-                    <Typography variant="h6" sx={{ color: "#fff" }}>
-                      #{index + 1} Player
+                    <Typography variant="body2" sx={{ color: "#49dcb1", fontWeight: 600 }}>
+                      #{index + 1}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#8ce8ff", mb: 1 }}>
-                      {entry.userId}
+                    <Typography variant="h6" sx={{ color: "#fff", mt: 1 }}>
+                      Player {entry.userId}
                     </Typography>
-
-                    <Chip
-                      size="small"
-                      label={`Score ${entry.score}`}
-                      sx={{ mr: 1, mb: 1, color: "#fff", backgroundColor: "rgba(100, 200, 255, 0.35)" }}
-                    />
-                    <Chip
-                      size="small"
-                      label={`Level ${entry.level}`}
-                      sx={{ mr: 1, mb: 1, color: "#fff", backgroundColor: "rgba(122, 255, 180, 0.3)" }}
-                    />
-                    <Chip
-                      size="small"
-                      label={`XP ${entry.experiencePoints}`}
-                      sx={{ mb: 1, color: "#fff", backgroundColor: "rgba(255, 210, 120, 0.28)" }}
-                    />
-
-                    <Typography variant="body2" sx={{ color: "#ddd", mt: 0.5 }}>
-                      {entry.progress}
+                    <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
+                      <Chip label={`Score: ${entry.score}`} size="small" sx={{ backgroundColor: "rgba(73, 220, 177, 0.2)" }} />
+                      <Chip label={`Level ${entry.level}`} size="small" sx={{ backgroundColor: "rgba(255, 107, 107, 0.2)" }} />
+                      <Chip label={`XP: ${entry.experiencePoints}`} size="small" sx={{ backgroundColor: "rgba(100, 150, 255, 0.2)" }} />
+                    </Box>
+                    <Typography variant="body2" sx={{ color: "#aaa", mt: 2 }}>
+                      Status: {entry.progress}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "#aaa", display: "block", mt: 0.75 }}>
-                      Updated: {toDisplayDate(entry.updatedAt)}
+                    <Typography variant="caption" sx={{ color: "#666", mt: 1, display: "block" }}>
+                      Updated: {new Date(entry.updatedAt).toLocaleString()}
                     </Typography>
                   </CardContent>
                 </Card>

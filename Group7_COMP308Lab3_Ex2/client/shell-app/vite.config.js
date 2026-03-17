@@ -9,6 +9,7 @@ export default defineConfig({
       name: "shellApp",
       remotes: {
         authApp: "http://localhost:5175/assets/remoteEntry.js",
+        gameProgressApp: "http://localhost:5176/assets/remoteEntry.js",
       },
       shared: {
         react: { singleton: true, requiredVersion: "^19.1.0" },
