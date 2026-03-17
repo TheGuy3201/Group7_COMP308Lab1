@@ -7,9 +7,6 @@ import Users from "./user/Users.jsx";
 import Profile from "./user/Profile.jsx";
 import PrivateRoute from "./lib/PrivateRoute.jsx";
 import EditProfile from "./user/EditProfile.jsx";
-import Games from "./game/games.jsx";
-import AddGame from "./game/addGame.jsx";
-import GameDetails from "./game/gameDetails.jsx";
 
 import Menu from "./core/Menu";
 
@@ -25,6 +22,20 @@ const AuthRemoteUnavailable = ({ mode }) => (
 
 const RemoteAuthPage = lazy(() =>
   import("authApp/AuthPage").catch(() => ({ default: AuthRemoteUnavailable }))
+);
+
+const ProgressRemoteUnavailable = () => (
+  <div style={{ padding: 24 }}>
+    <h2 style={{ marginTop: 0 }}>Game Progress service unavailable</h2>
+    <p>
+      Unable to load the Game Progress micro frontend. Ensure `client/game-progress-app` is running on
+      `http://localhost:5176`.
+    </p>
+  </div>
+);
+
+const RemoteGameProgressPage = lazy(() =>
+  import("gameProgressApp/GameProgressPage").catch(() => ({ default: ProgressRemoteUnavailable }))
 );
 
 const Particles = () => {
@@ -148,9 +159,14 @@ function MainRouter() {
       <Routes>
          <Route path="/" element={<Home />} />
          <Route path="/users" element={<Users />} />
-         <Route path="/games" element={<Games />} />
-         <Route path="/games/new" element={<AddGame />} />
-         <Route path="/game/:gameId" element={<GameDetails />} />
+         <Route
+           path="/progress"
+           element={
+             <Suspense fallback={<div style={{ padding: 24 }}>Loading game progress...</div>}>
+               <RemoteGameProgressPage />
+             </Suspense>
+           }
+         />
          <Route
            path="/register"
            element={

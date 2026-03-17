@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import { ApolloServer } from "@apollo/server";
 import configureMongoose from "../../config/mongoose.js";
-import Game from "../graphQL/models/game.model.js";
+import GameProgress from "../graphQL/models/game.model.js";
 
 dotenv.config({ quiet: true });
 
@@ -15,88 +15,103 @@ const allowedOrigins = (process.env.GAME_CORS_ORIGINS || "http://localhost:5173,
   .filter(Boolean);
 
 const typeDefs = `#graphql
-  type Game {
-    gameId: ID!
-    title: String!
-    genre: String!
-    platform: String
-    releaseYear: Int
-    developer: String
-    rating: Float
-    description: String
+  type GameProgress {
+    progressId: ID!
+    userId: ID!
+    level: Int!
+    experiencePoints: Int!
+    score: Int!
+    rank: Int
+    achievements: [String!]!
+    progress: String!
+    lastPlayed: String
+    updatedAt: String
   }
 
   type Query {
-    games: [Game!]!
-    game(gameId: ID!): Game
-    gamesByGenre(genre: String!): [Game!]!
-    gamesByPlatform(platform: String!): [Game!]!
-    gamesByDeveloper(developer: String!): [Game!]!
-    gamesByYear(releaseYear: Int!): [Game!]!
-    searchGames(searchTerm: String!): [Game!]!
+    gameProgressList: [GameProgress!]!
+    gameProgress(progressId: ID!): GameProgress
+    gameProgressByUser(userId: ID!): GameProgress
+    leaderboard(limit: Int = 10): [GameProgress!]!
   }
 
   type Mutation {
-    addGame(
-      title: String!
-      genre: String!
-      platform: String
-      releaseYear: Int
-      developer: String
-      rating: Float
-      description: String
-    ): Game!
+    addGameProgress(
+      userId: ID!
+      level: Int = 1
+      experiencePoints: Int = 0
+      score: Int = 0
+      rank: Int
+      achievements: [String!]
+      progress: String = "Not started"
+      lastPlayed: String
+    ): GameProgress!
 
-    updateGame(
-      gameId: ID!
-      title: String
-      genre: String
-      platform: String
-      releaseYear: Int
-      developer: String
-      rating: Float
-      description: String
-    ): Game!
+    updateGameProgress(
+      progressId: ID!
+      level: Int
+      experiencePoints: Int
+      score: Int
+      rank: Int
+      achievements: [String!]
+      progress: String
+      lastPlayed: String
+    ): GameProgress!
 
-    deleteGame(gameId: ID!): Boolean!
-    deleteGameByTitle(title: String!): Boolean!
+    deleteGameProgress(progressId: ID!): Boolean!
+    deleteGameProgressByUser(userId: ID!): Boolean!
   }
 `;
 
 const resolvers = {
   Query: {
-    games: async () => await Game.find(),
-    game: async (_, { gameId }) => await Game.findById(gameId),
-    gamesByGenre: async (_, { genre }) => await Game.find({ genre }),
-    gamesByPlatform: async (_, { platform }) => await Game.find({ platform }),
-    gamesByDeveloper: async (_, { developer }) => await Game.find({ developer }),
-    gamesByYear: async (_, { releaseYear }) => await Game.find({ releaseYear }),
-    searchGames: async (_, { searchTerm }) =>
-      await Game.find({
-        $or: [
-          { title: { $regex: searchTerm, $options: "i" } },
-          { genre: { $regex: searchTerm, $options: "i" } },
-          { platform: { $regex: searchTerm, $options: "i" } },
-        ],
-      }),
+    gameProgressList: async () => await GameProgress.find().sort({ updatedAt: -1 }),
+    gameProgress: async (_, { progressId }) => await GameProgress.findById(progressId),
+    gameProgressByUser: async (_, { userId }) => await GameProgress.findOne({ userId }),
+    leaderboard: async (_, { limit = 10 }) =>
+      await GameProgress.find().sort({ score: -1, level: -1, experiencePoints: -1 }).limit(limit),
   },
   Mutation: {
-    addGame: async (_, { title, genre, platform, releaseYear, developer, rating, description }) => {
-      const newGame = new Game({ title, genre, platform, releaseYear, developer, rating, description });
-      return await newGame.save();
+    addGameProgress: async (
+      _,
+      { userId, level, experiencePoints, score, rank, achievements, progress, lastPlayed }
+    ) => {
+      const payload = {
+        userId,
+        level,
+        experiencePoints,
+        score,
+        rank,
+        achievements,
+        progress,
+        ...(lastPlayed ? { lastPlayed: new Date(lastPlayed) } : {}),
+      };
+
+      const newGameProgress = new GameProgress(payload);
+      return await newGameProgress.save();
     },
-    updateGame: async (_, { gameId, title, genre, platform, releaseYear, developer, rating, description }) =>
-      await Game.findByIdAndUpdate(
-        gameId,
-        { title, genre, platform, releaseYear, developer, rating, description },
-        { new: true }
-      ),
-    deleteGame: async (_, { gameId }) => {
-      const result = await Game.findByIdAndDelete(gameId);
+    updateGameProgress: async (
+      _,
+      { progressId, level, experiencePoints, score, rank, achievements, progress, lastPlayed }
+    ) => {
+      const updateData = {
+        ...(level !== undefined ? { level } : {}),
+        ...(experiencePoints !== undefined ? { experiencePoints } : {}),
+        ...(score !== undefined ? { score } : {}),
+        ...(rank !== undefined ? { rank } : {}),
+        ...(achievements !== undefined ? { achievements } : {}),
+        ...(progress !== undefined ? { progress } : {}),
+        ...(lastPlayed ? { lastPlayed: new Date(lastPlayed) } : {}),
+      };
+
+      return await GameProgress.findByIdAndUpdate(progressId, updateData, { new: true });
+    },
+    deleteGameProgress: async (_, { progressId }) => {
+      const result = await GameProgress.findByIdAndDelete(progressId);
       return !!result;
     },
-    deleteGameByTitle: async (_, { title }) => {
-      const result = await Game.findOneAndDelete({ title });
+    deleteGameProgressByUser: async (_, { userId }) => {
+      const result = await GameProgress.findOneAndDelete({ userId });
       return !!result;
     },
   },
@@ -112,7 +127,7 @@ const start = async () => {
   app.use(express.json());
 
   app.get("/health", (_, res) => {
-    res.json({ status: "ok", service: "game-microservice" });
+    res.json({ status: "ok", service: "game-progress-microservice" });
   });
 
   app.post("/graphql", async (req, res) => {
@@ -135,11 +150,11 @@ const start = async () => {
   });
 
   app.listen(PORT, () => {
-    console.log(`Game microservice running at http://localhost:${PORT}`);
+    console.log(`Game progress microservice running at http://localhost:${PORT}`);
   });
 };
 
 start().catch((error) => {
-  console.error("Game microservice failed to start", error);
+  console.error("Game progress microservice failed to start", error);
   process.exit(1);
 });

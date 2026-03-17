@@ -1,14 +1,14 @@
 {
-  "name": "auth-app",
+  "name": "game-progress-app",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "npm run serve:mf",
-    "dev:local": "vite --port 5175 --strictPort",
+    "dev:local": "vite --port 5176 --strictPort",
     "build": "vite build",
     "preview": "vite preview",
-    "serve:mf": "vite build --logLevel silent && vite preview --port 5175 --strictPort --logLevel error"
+    "serve:mf": "vite build --logLevel silent && vite preview --port 5176 --strictPort --logLevel error"
   },
   "dependencies": {
     "@apollo/client": "^3.11.3",

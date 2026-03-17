@@ -29,10 +29,6 @@ export default function Menu() {
           </IconButton>
         </Link>
 
-        <Link to="/games">
-          <Button sx={{ color: isActive(location, "/games") }}>Games</Button>
-        </Link>
-
         <Link to="/users">
           <Button sx={{ color: isActive(location, "/users") }}>Users</Button>
         </Link>
@@ -54,11 +50,6 @@ export default function Menu() {
 
         {authData && (
           <>
-            <Link to="/games/new">
-              <Button sx={{ color: isActive(location, "/games/new") }}>
-                Add Game
-              </Button>
-            </Link>
             <Link to={`/user/${authData?.user?.userId}`}>
               <Button
                 sx={{

@@ -51,13 +51,16 @@ const typeDefs = `#graphql
   }
 `;
 
-const sanitizeUser = (userDoc) => ({
-  userId: userDoc.userId,
-  username: userDoc.username,
-  email: userDoc.email,
-  role: userDoc.role,
-  createdAt: userDoc.createdAt,
-});
+const sanitizeUser = (userDoc) => {
+  const docObj = userDoc.toJSON();
+  return {
+    userId: docObj.userId,
+    username: docObj.username,
+    email: docObj.email,
+    role: docObj.role,
+    createdAt: docObj.createdAt,
+  };
+};
 
 const createAuthResponse = (userDoc) => {
   const user = sanitizeUser(userDoc);
