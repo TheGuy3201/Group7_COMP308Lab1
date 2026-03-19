@@ -12,11 +12,18 @@ export default defineConfig({
         "./GameProgressPage": "./src/GameProgressPage.jsx",
       },
       shared: {
-        react: { singleton: true, requiredVersion: "^19.1.0" },
-        "react-dom": { singleton: true, requiredVersion: "^19.1.0" },
+        react: { singleton: true, requiredVersion: false },
+  "react-dom": { singleton: true, requiredVersion: false },
         "react-router-dom": { singleton: true, requiredVersion: "^7.13.0" },
         "@apollo/client": { singleton: true, requiredVersion: "^3.11.3" },
         graphql: { singleton: true, requiredVersion: "^16.12.0" },
+
+        three: {
+          singleton: true,
+          requiredVersion: false,
+        },
+        "@react-three/fiber": { singleton: true },
+        "@react-three/drei": { singleton: true },
       },
     }),
   ],
@@ -24,6 +31,10 @@ export default defineConfig({
     target: "esnext",
     minify: false,
     cssCodeSplit: false,
+    commonjsOptions: {
+    include: [/three/, /node_modules/],
+  },
+
   },
   server: {
     port: 5176,

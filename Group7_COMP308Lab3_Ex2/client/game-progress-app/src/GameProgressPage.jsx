@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
+import Leaderboard3D from "./Leaderboard3D";
 import "./gameProgress.css";
 
 const PROGRESS_FIELDS = `
@@ -420,6 +421,17 @@ export default function GameProgressPage() {
               </table>
             </div>
           )}
+        </article>
+          <article className="gp-card">
+            <div className="gp-card-header">
+              <h2>3D Leaderboard</h2>
+              <p>Interactive 3D ranking visualization.</p>
+            </div>
+          {leaderboardRows.length > 0 ? (
+            <Leaderboard3D data={leaderboardRows} />
+            ) : (
+              <p className="gp-loading">Loading 3D leaderboard...</p>
+            )}
         </article>
       </section>
 

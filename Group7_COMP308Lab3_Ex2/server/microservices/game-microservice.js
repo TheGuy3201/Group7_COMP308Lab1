@@ -3,7 +3,7 @@ import cors from "cors";
 import express from "express";
 import { ApolloServer } from "@apollo/server";
 import configureMongoose from "../../config/mongoose.js";
-import GameProgress from "../graphQL/models/game.model.js";
+import GameProgress from "../graphQL/models/gameProgress.model.js";
 
 dotenv.config({ quiet: true });
 

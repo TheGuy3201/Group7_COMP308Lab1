@@ -6,19 +6,19 @@ export default defineConfig({
   plugins: [
     react(),
     federation({
-      name: "shellApp",
-      remotes: {
-        authApp: "http://localhost:5175/assets/remoteEntry.js",
-        gameProgressApp: "http://localhost:5176/assets/remoteEntry.js",
-      },
-      shared: {
-        react: { singleton: true, requiredVersion: "^19.1.0" },
-        "react-dom": { singleton: true, requiredVersion: "^19.1.0" },
-        "react-router-dom": { singleton: true, requiredVersion: "^7.13.0" },
-        "@apollo/client": { singleton: true, requiredVersion: "^3.11.3" },
-        graphql: { singleton: true, requiredVersion: "^16.12.0" },
-      },
-    }),
+  name: "shellApp",
+  remotes: {
+    authApp: "http://localhost:5175/assets/remoteEntry.js",
+    gameProgressApp: "http://localhost:5176/assets/remoteEntry.js",
+  },
+  shared: {
+    react: { singleton: true, requiredVersion: false },
+  "react-dom": { singleton: true, requiredVersion: false },
+    "react-router-dom": { singleton: true, requiredVersion: "^7.13.0" },
+    "@apollo/client": { singleton: true, requiredVersion: "^3.11.3" },
+    graphql: { singleton: true, requiredVersion: "^16.12.0" },
+  },
+}),
   ],
   optimizeDeps: {
     include: [
@@ -26,7 +26,11 @@ export default defineConfig({
       '@apollo/client/core',
       '@apollo/client/cache',
       '@apollo/client/link/http',
-      'graphql'
+      'graphql',
+
+      'three',
+    '@react-three/fiber',
+    '@react-three/drei'
     ],
     esbuildOptions: {
       supported: {
@@ -59,4 +63,12 @@ export default defineConfig({
       input: "./src/main.jsx",
     },
   },
+
+  resolve: {
+  alias: {
+    three: "three",
+  },
+  dedupe: ["react", "react-dom"],
+},
+
 });
