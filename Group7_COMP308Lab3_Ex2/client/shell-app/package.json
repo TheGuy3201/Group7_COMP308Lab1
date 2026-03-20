@@ -22,11 +22,9 @@
     "game-progress-tracker": "file:../..",
     "global": "^4.4.0",
     "graphql": "^16.12.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
     "react-router": "^7.13.0",
     "react-router-dom": "^7.13.0",
-    "three": "^0.182.0"
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -38,5 +36,9 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "vite": "^6.3.5"
-  }
+  },
+  "overrides": {
+  "react": "19.2.4",
+  "react-dom": "19.2.4"
+}
 }
