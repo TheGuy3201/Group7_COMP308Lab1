@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { gql, useMutation, useQuery } from "@apollo/client";
+import { gql, useLazyQuery, useMutation, useQuery } from "@apollo/client";
 import * as THREE from "three";
 import "./gameProgress.css";
 
@@ -11,6 +11,11 @@ const PROGRESS_FIELDS = `
   score
   rank
   achievements
+  levelFailures {
+    level
+    failCount
+    lastFailedAt
+  }
   progress
   lastPlayed
   updatedAt
@@ -87,6 +92,29 @@ const UPDATE_PROGRESS_MUTATION = gql`
       progress: $progress
       lastPlayed: $lastPlayed
     ) {
+      ${PROGRESS_FIELDS}
+    }
+  }
+`;
+
+const AI_STRATEGY_QUERY = gql`
+  query GetAIStrategy($input: AIHintInput!) {
+    aiStrategy(input: $input) {
+      response
+      hints
+      alternativeStrategies
+      proactiveSuggestion
+      failCount
+      level
+      modelConfidence
+      retrievedDocs
+    }
+  }
+`;
+
+const RECORD_LEVEL_FAILURE_MUTATION = gql`
+  mutation RecordLevelFailure($userId: ID!, $level: Int!) {
+    recordLevelFailure(userId: $userId, level: $level) {
       ${PROGRESS_FIELDS}
     }
   }
@@ -630,6 +658,10 @@ export default function GameProgressPage() {
   const [trophySpin, setTrophySpin] = useState(0);
   const [unlockFlash, setUnlockFlash] = useState(false);
   const [unlockedBadges, setUnlockedBadges] = useState(new Set());
+  const [aiQuestion, setAiQuestion] = useState("How do I pass Level 5?");
+  const [aiTargetLevel, setAiTargetLevel] = useState("5");
+  const [aiOutput, setAiOutput] = useState(null);
+  const [aiError, setAiError] = useState("");
 
   const leaderboardQuery = useQuery(LEADERBOARD_QUERY, {
     variables: { limit: leaderboardLimit },
@@ -651,6 +683,10 @@ export default function GameProgressPage() {
 
   const [addProgress, addProgressState] = useMutation(ADD_PROGRESS_MUTATION);
   const [updateProgress, updateProgressState] = useMutation(UPDATE_PROGRESS_MUTATION);
+  const [recordFailure, recordFailureState] = useMutation(RECORD_LEVEL_FAILURE_MUTATION);
+  const [fetchAiStrategy, aiStrategyState] = useLazyQuery(AI_STRATEGY_QUERY, {
+    fetchPolicy: "network-only",
+  });
 
   const userProgress = userProgressQuery.data?.gameProgressByUser || null;
 
@@ -703,6 +739,61 @@ export default function GameProgressPage() {
   };
 
   const isMutating = addProgressState.loading || updateProgressState.loading;
+
+  const askAiCoach = async ({ forceQuestion, forceLevel } = {}) => {
+    if (!activeUserId) {
+      setAiError("A userId is required before asking the AI strategy agent.");
+      return;
+    }
+
+    const levelValue = Math.max(1, toInteger(forceLevel ?? aiTargetLevel ?? form.level, 1));
+    const questionValue = String(forceQuestion ?? aiQuestion ?? "How do I pass this level?").trim();
+    setAiError("");
+
+    try {
+      const { data } = await fetchAiStrategy({
+        variables: {
+          input: {
+            userId: activeUserId,
+            question: questionValue,
+            level: levelValue,
+          },
+        },
+      });
+      setAiOutput(data?.aiStrategy || null);
+    } catch (queryError) {
+      setAiError(queryError.message || "AI strategy service is unavailable right now.");
+    }
+  };
+
+  const recordFailureAndAdapt = async () => {
+    if (!activeUserId) {
+      setAiError("A userId is required before recording a failed attempt.");
+      return;
+    }
+
+    const levelValue = Math.max(1, toInteger(aiTargetLevel || form.level, 1));
+    setAiError("");
+
+    try {
+      await recordFailure({
+        variables: { userId: activeUserId, level: levelValue },
+      });
+
+      await Promise.all([
+        leaderboardQuery.refetch({ limit: leaderboardLimit }),
+        progressListQuery.refetch(),
+        userProgressQuery.refetch({ userId: activeUserId }),
+      ]);
+
+      await askAiCoach({
+        forceQuestion: aiQuestion || `How do I pass Level ${levelValue}?`,
+        forceLevel: levelValue,
+      });
+    } catch (mutationError) {
+      setAiError(mutationError.message || "Unable to record failed attempt right now.");
+    }
+  };
 
   const syncProgress = async () => {
     if (!activeUserId) {
@@ -869,6 +960,87 @@ export default function GameProgressPage() {
               <strong>{formatDate(userProgress?.updatedAt)}</strong>
             </div>
           </div>
+        </article>
+
+        {/* AI Strategy card */}
+        <article className="gp-card gp-card--ai">
+          <div className="gp-card-header">
+            <h2>AI Strategy Agent (TensorFlow + RAG)</h2>
+            <p>Analyzes player progress, retrieves hints, and adapts strategy after repeated failures.</p>
+          </div>
+
+          <div className="gp-ai-form">
+            <label>
+              Ask the AI
+              <input
+                value={aiQuestion}
+                onChange={(e) => setAiQuestion(e.target.value)}
+                placeholder="How do I pass Level 5?"
+              />
+            </label>
+            <label>
+              Level
+              <input
+                value={aiTargetLevel}
+                onChange={(e) => setAiTargetLevel(e.target.value)}
+                type="number"
+                min="1"
+              />
+            </label>
+          </div>
+
+          <div className="gp-ai-actions">
+            <button
+              type="button"
+              className="gp-primary"
+              onClick={() => askAiCoach()}
+              disabled={aiStrategyState.loading}
+            >
+              {aiStrategyState.loading ? "Analyzing Progress…" : "Get AI Hint"}
+            </button>
+            <button
+              type="button"
+              className="gp-secondary"
+              onClick={recordFailureAndAdapt}
+              disabled={recordFailureState.loading}
+            >
+              {recordFailureState.loading ? "Recording Failure…" : "I Failed This Level"}
+            </button>
+          </div>
+
+          {aiError ? <p className="gp-error">{aiError}</p> : null}
+
+          {aiOutput ? (
+            <div className="gp-ai-output">
+              <p className="gp-ai-main">{aiOutput.response}</p>
+              <p className="gp-ai-meta">
+                Level {aiOutput.level} · Fails: {aiOutput.failCount} · Confidence: {(Number(aiOutput.modelConfidence || 0) * 100).toFixed(1)}%
+              </p>
+              {aiOutput.proactiveSuggestion ? (
+                <p className="gp-ai-proactive">Proactive tip: {aiOutput.proactiveSuggestion}</p>
+              ) : null}
+              <div className="gp-ai-split">
+                <div>
+                  <h3>Retrieved Hints</h3>
+                  <ul>
+                    {(aiOutput.hints || []).map((hint, idx) => (
+                      <li key={`hint-${idx}`}>{hint}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3>Alternative Strategies</h3>
+                  <ul>
+                    {(aiOutput.alternativeStrategies || []).map((tip, idx) => (
+                      <li key={`alt-${idx}`}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="gp-loading">Ask a question to generate dynamic strategy guidance.</p>
+          )}
         </article>
 
         {/* Leaderboard card */}

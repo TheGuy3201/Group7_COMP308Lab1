@@ -4,6 +4,7 @@ import express from "express";
 import { ApolloServer } from "@apollo/server";
 import configureMongoose from "../../config/mongoose.js";
 import GameProgress from "../graphQL/models/gameProgress.model.js";
+import { generateAdaptiveStrategy } from "./ai-strategy-agent.js";
 
 dotenv.config({ quiet: true });
 
@@ -15,6 +16,12 @@ const allowedOrigins = (process.env.GAME_CORS_ORIGINS || "http://localhost:5173,
   .filter(Boolean);
 
 const typeDefs = `#graphql
+  type LevelFailure {
+    level: Int!
+    failCount: Int!
+    lastFailedAt: String
+  }
+
   type GameProgress {
     progressId: ID!
     userId: ID!
@@ -23,9 +30,27 @@ const typeDefs = `#graphql
     score: Int!
     rank: Int
     achievements: [String!]!
+    levelFailures: [LevelFailure!]!
     progress: String!
     lastPlayed: String
     updatedAt: String
+  }
+
+  input AIHintInput {
+    userId: ID!
+    question: String!
+    level: Int
+  }
+
+  type AIHintResponse {
+    response: String!
+    hints: [String!]!
+    alternativeStrategies: [String!]!
+    proactiveSuggestion: String
+    failCount: Int!
+    level: Int!
+    modelConfidence: Float!
+    retrievedDocs: [String!]!
   }
 
   type Query {
@@ -33,6 +58,7 @@ const typeDefs = `#graphql
     gameProgress(progressId: ID!): GameProgress
     gameProgressByUser(userId: ID!): GameProgress
     leaderboard(limit: Int = 10): [GameProgress!]!
+    aiStrategy(input: AIHintInput!): AIHintResponse!
   }
 
   type Mutation {
@@ -58,6 +84,8 @@ const typeDefs = `#graphql
       lastPlayed: String
     ): GameProgress!
 
+    recordLevelFailure(userId: ID!, level: Int!): GameProgress!
+
     deleteGameProgress(progressId: ID!): Boolean!
     deleteGameProgressByUser(userId: ID!): Boolean!
   }
@@ -70,6 +98,40 @@ const resolvers = {
     gameProgressByUser: async (_, { userId }) => await GameProgress.findOne({ userId }),
     leaderboard: async (_, { limit = 10 }) =>
       await GameProgress.find().sort({ score: -1, level: -1, experiencePoints: -1 }).limit(limit),
+    aiStrategy: async (_, { input }) => {
+      try {
+        const { userId, question, level } = input;
+        if (!question || !question.trim()) {
+          throw new Error("Question cannot be empty.");
+        }
+        console.log(`[Game Service] aiStrategy request for userId=${userId}, level=${level}`);
+        const progress = await GameProgress.findOne({ userId });
+
+        if (!progress) {
+          const fallback = await generateAdaptiveStrategy({
+            question,
+            level,
+            playerProgress: { level: level || 1, experiencePoints: 0, score: 0 },
+            failCount: 0,
+          });
+          return fallback;
+        }
+
+        const strategyLevel = Number(level || progress.level || 1);
+        const failEntry = (progress.levelFailures || []).find((item) => Number(item.level) === strategyLevel);
+        const failCount = Number(failEntry?.failCount || 0);
+
+        return await generateAdaptiveStrategy({
+          question,
+          level: strategyLevel,
+          playerProgress: progress,
+          failCount,
+        });
+      } catch (error) {
+        console.error("[Game Service] aiStrategy resolver error:", error.message);
+        throw error;
+      }
+    },
   },
   Mutation: {
     addGameProgress: async (
@@ -83,6 +145,7 @@ const resolvers = {
         score,
         rank,
         achievements,
+        levelFailures: [],
         progress,
         ...(lastPlayed ? { lastPlayed: new Date(lastPlayed) } : {}),
       };
@@ -105,6 +168,40 @@ const resolvers = {
       };
 
       return await GameProgress.findByIdAndUpdate(progressId, updateData, { new: true });
+    },
+    recordLevelFailure: async (_, { userId, level }) => {
+      const safeLevel = Math.max(1, Number(level || 1));
+      let progress = await GameProgress.findOne({ userId });
+
+      if (!progress) {
+        progress = new GameProgress({
+          userId,
+          level: safeLevel,
+          experiencePoints: 0,
+          score: 0,
+          achievements: [],
+          levelFailures: [{ level: safeLevel, failCount: 1, lastFailedAt: new Date() }],
+          progress: `Attempting Level ${safeLevel}`,
+          lastPlayed: new Date(),
+        });
+        return await progress.save();
+      }
+
+      const failures = progress.levelFailures || [];
+      const existing = failures.find((entry) => Number(entry.level) === safeLevel);
+
+      if (existing) {
+        existing.failCount = Number(existing.failCount || 0) + 1;
+        existing.lastFailedAt = new Date();
+      } else {
+        failures.push({ level: safeLevel, failCount: 1, lastFailedAt: new Date() });
+      }
+
+      progress.levelFailures = failures;
+      progress.progress = `Attempting Level ${safeLevel}`;
+      progress.lastPlayed = new Date();
+
+      return await progress.save();
     },
     deleteGameProgress: async (_, { progressId }) => {
       const result = await GameProgress.findByIdAndDelete(progressId);

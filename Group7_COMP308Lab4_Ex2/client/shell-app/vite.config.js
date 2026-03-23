@@ -29,8 +29,7 @@ export default defineConfig({
       'graphql',
 
       'three',
-    '@react-three/fiber',
-    '@react-three/drei'
+    '@react-three/fiber'
     ],
     esbuildOptions: {
       supported: {

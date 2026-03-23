@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const levelFailureSchema = new mongoose.Schema(
+  {
+    level: { type: Number, required: true, min: 1 },
+    failCount: { type: Number, required: true, default: 0, min: 0 },
+    lastFailedAt: { type: Date },
+  },
+  { _id: false }
+);
+
 const gameProgressSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true },
@@ -8,6 +17,7 @@ const gameProgressSchema = new mongoose.Schema(
     score: { type: Number, required: true, default: 0 },
     rank: { type: Number },
     achievements: { type: [String], default: [] },
+    levelFailures: { type: [levelFailureSchema], default: [] },
     progress: { type: String, default: "Not started" },
     lastPlayed: { type: Date },
   },
