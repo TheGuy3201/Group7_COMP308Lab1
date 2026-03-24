@@ -417,6 +417,32 @@ tbody tr:hover {
   cursor: wait;
 }
 
+.gp-secondary {
+  border: 1px solid rgba(73, 220, 177, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: rgba(73, 220, 177, 0.08);
+  color: var(--gp-text);
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  transition: background 0.2s, transform 0.15s, border-color 0.2s;
+}
+
+.gp-secondary:hover:not(:disabled) {
+  background: rgba(73, 220, 177, 0.16);
+  border-color: rgba(73, 220, 177, 0.65);
+  transform: translateY(-1px);
+}
+
+.gp-secondary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .gp-status,
 .gp-error,
 .gp-loading {
@@ -453,6 +479,104 @@ tbody tr:hover {
   margin-top: 4px;
   font-size: 13px;
   word-break: break-word;
+}
+
+/* ── AI STRATEGY CARD ─────────────────────────────────────────────────────── */
+
+.gp-card--ai {
+  background:
+    linear-gradient(180deg, rgba(16, 35, 43, 0.9), rgba(8, 20, 26, 0.86)),
+    radial-gradient(circle at 80% 0%, rgba(73, 220, 177, 0.22), transparent 42%);
+}
+
+.gp-ai-form {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 10px;
+}
+
+.gp-ai-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--gp-muted);
+}
+
+.gp-ai-form input {
+  width: 100%;
+  border: 1px solid rgba(122, 224, 219, 0.28);
+  background: rgba(5, 14, 18, 0.8);
+  color: #ebffff;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font: inherit;
+}
+
+.gp-ai-actions {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gp-ai-output {
+  margin-top: 12px;
+  border: 1px solid rgba(73, 220, 177, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(7, 18, 24, 0.76);
+}
+
+.gp-ai-main {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.gp-ai-meta {
+  margin: 8px 0 0;
+  color: var(--gp-muted);
+  font-size: 12px;
+}
+
+.gp-ai-proactive {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.34);
+  background: rgba(251, 191, 36, 0.1);
+  color: #ffe9b5;
+  font-size: 13px;
+}
+
+.gp-ai-split {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.gp-ai-split h3 {
+  margin: 0;
+  font-size: 13px;
+  color: #a8fff0;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.gp-ai-split ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.gp-ai-split li {
+  color: #d4fbff;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* ── TROPHY + BADGE WALL ──────────────────────────────────────────────────── */
@@ -649,6 +773,12 @@ tbody tr:hover {
   }
 
   .gp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gp-ai-form,
+  .gp-ai-actions,
+  .gp-ai-split {
     grid-template-columns: 1fr;
   }
 

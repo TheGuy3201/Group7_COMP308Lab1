@@ -70,8 +70,10 @@ const routeGraphqlTarget = (query = "") => {
     "gameProgress(",
     "gameProgressByUser",
     "leaderboard",
+    "aiStrategy",
     "addGameProgress",
     "updateGameProgress",
+    "recordLevelFailure",
     "deleteGameProgress",
     "deleteGameProgressByUser",
   ];
