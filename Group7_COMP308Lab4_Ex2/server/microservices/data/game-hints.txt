@@ -1,0 +1,29 @@
+Level 1: Focus on movement timing and avoid rushing enemies one by one.
+Level 1: Keep one dodge resource available instead of spending all stamina.
+
+Level 2: Break combat into short bursts, then reposition before the next attack wave.
+Level 2: Prioritize survival over speed while learning enemy patterns.
+
+Level 3: Use terrain and spacing to avoid multi-target pressure.
+Level 3: Clear ranged enemies first to reduce incoming damage.
+
+Level 4: Build a defensive rhythm by alternating block, dodge, and light counterattacks.
+Level 4: Save high-cooldown skills for guaranteed punish windows.
+
+Level 5: Watch for the second boss swing and dodge late to avoid chain hits.
+Level 5: Upgrade armor before attempting aggressive combos.
+
+Level 6: Bait heavy attacks, then counter during recovery frames.
+Level 6: Use safer mid-range tactics if your failure count is increasing.
+
+Level 7: Control space by kiting enemies into open lanes.
+Level 7: Use a two-skill rotation to maintain stamina consistency.
+
+Level 8: Prioritize objective control and avoid overcommitting to one target.
+Level 8: Rotate cooldowns so at least one escape tool is always ready.
+
+Level 9: Use burst only after confirming enemy animation lock.
+Level 9: If pressure is high, switch to a sustain-focused setup.
+
+Level 10: Play for consistency with disciplined timing and defensive resets.
+Level 10: Track fail patterns and adjust one variable at a time (build, route, or timing).
