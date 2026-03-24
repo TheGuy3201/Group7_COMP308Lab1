@@ -51,6 +51,7 @@ const typeDefs = `#graphql
     level: Int!
     modelConfidence: Float!
     retrievedDocs: [String!]!
+    ragEnabled: Boolean!
   }
 
   type Query {

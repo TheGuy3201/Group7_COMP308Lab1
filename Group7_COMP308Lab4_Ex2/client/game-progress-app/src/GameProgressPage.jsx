@@ -108,6 +108,7 @@ const AI_STRATEGY_QUERY = gql`
       level
       modelConfidence
       retrievedDocs
+      ragEnabled
     }
   }
 `;
@@ -1015,6 +1016,15 @@ export default function GameProgressPage() {
               <p className="gp-ai-main">{aiOutput.response}</p>
               <p className="gp-ai-meta">
                 Level {aiOutput.level} · Fails: {aiOutput.failCount} · Confidence: {(Number(aiOutput.modelConfidence || 0) * 100).toFixed(1)}%
+                {aiOutput.ragEnabled ? (
+                  <span style={{ marginLeft: "12px", display: "inline-block", padding: "2px 6px", borderRadius: "4px", backgroundColor: "rgba(73, 220, 177, 0.2)", fontSize: "11px", fontWeight: "600", color: "#49dcb1", letterSpacing: "0.04em" }}>
+                    RAG + LangChain Enabled
+                  </span>
+                ) : (
+                  <span style={{ marginLeft: "12px", display: "inline-block", padding: "2px 6px", borderRadius: "4px", backgroundColor: "rgba(255, 107, 107, 0.15)", fontSize: "11px", fontWeight: "600", color: "#ff6b6b", letterSpacing: "0.04em" }}>
+                    Using Fallback
+                  </span>
+                )}
               </p>
               {aiOutput.proactiveSuggestion ? (
                 <p className="gp-ai-proactive">Proactive tip: {aiOutput.proactiveSuggestion}</p>

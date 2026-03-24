@@ -1,13 +1,264 @@
 import * as tf from "@tensorflow/tfjs";
 import fetch from "node-fetch";
+import dotenv from "dotenv";
+import { Document } from "@langchain/core/documents";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 
-// Adapted from the TensorFlow sequential/dense training pattern used in
-// D:\Sem6-W26\EmergTech\lab8_JoshuaDesroches\backprop-with-tensorflow.
+dotenv.config({ quiet: true });
 
-// Enable generative responses: set a function to call an LLM or leave null for curated-only
-const GENERATIVE_PROMPT_FN = process.env.OPENAI_API_KEY 
-  ? generateWithOpenAI 
-  : generateWithTemplates;
+// ─── LangChain + Gemini Integration ───────────────────────────────────────
+
+let embeddingsModel = null;
+let vectorStore = null;
+let geminiModelName = null;
+let disableVectorStore = false;
+let geminiBlockedUntil = 0;
+
+const GCP_GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const GEMINI_429_COOLDOWN_MS = Number(process.env.GEMINI_429_COOLDOWN_MS || 15 * 60 * 1000);
+
+const initializeLangChainResources = async () => {
+  try {
+    // Confirm Gemini API key availability for generation.
+    if (process.env.GOOGLE_API_KEY) {
+      console.log("[LangChain] Gemini API client initialized.");
+    }
+
+    // Initialize embeddings model (fallback to simple hashing if transformer unavailable)
+    if (!embeddingsModel) {
+      try {
+        embeddingsModel = new HuggingFaceTransformersEmbeddings({
+          model: "Xenova/all-MiniLM-L6-v2",
+        });
+        console.log("[LangChain] Embeddings model loaded.");
+      } catch (e) {
+        console.warn("[LangChain] Transformer embeddings unavailable, using fallback lexical search.");
+        embeddingsModel = null;
+      }
+    }
+  } catch (error) {
+    console.warn("[LangChain] Initialization warning:", error.message);
+  }
+};
+
+const chooseGeminiModel = async () => {
+  if (geminiModelName) return geminiModelName;
+
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(`${GCP_GEMINI_API_BASE}/models?key=${apiKey}`);
+    const raw = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`List models failed (${res.status}): ${raw.slice(0, 200)}`);
+    }
+
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      throw new Error("List models returned non-JSON payload.");
+    }
+
+    const models = Array.isArray(payload?.models) ? payload.models : [];
+
+    // Keep only text generation-capable Gemini models.
+    const supported = models
+      .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+      .map((m) => String(m.name || ""))
+      .filter((name) => name.includes("gemini"));
+
+    // Optional hard override from env (e.g. GEMINI_MODEL=gemini-1.5-flash-8b)
+    const forcedModel = String(process.env.GEMINI_MODEL || "").trim();
+    if (forcedModel) {
+      const forcedMatch = supported.find((name) => name.includes(forcedModel));
+      if (forcedMatch) {
+        geminiModelName = forcedMatch.replace(/^models\//, "");
+        console.log(`[LangChain] Using forced Gemini model: ${geminiModelName}`);
+        return geminiModelName;
+      }
+      console.warn(`[LangChain] GEMINI_MODEL=${forcedModel} not found in available models; falling back to auto selection.`);
+    }
+
+    // Prefer lowest-cost/basic variants first.
+    const preference = [
+      "gemini-2.0-flash-lite",
+      "gemini-1.5-flash-8b",
+      "gemini-1.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-pro",
+      "gemini-pro",
+    ];
+
+    for (const preferred of preference) {
+      const match = supported.find((name) => name.includes(preferred));
+      if (match) {
+        geminiModelName = match.replace(/^models\//, "");
+        console.log(`[LangChain] Using Gemini model: ${geminiModelName}`);
+        return geminiModelName;
+      }
+    }
+
+    if (supported.length > 0) {
+      geminiModelName = supported[0].replace(/^models\//, "");
+      console.log(`[LangChain] Using fallback Gemini model: ${geminiModelName}`);
+      return geminiModelName;
+    }
+
+    throw new Error("No Gemini model with generateContent support was found for this API key.");
+  } catch (error) {
+    console.warn("[LangChain] Could not determine Gemini model:", error.message);
+    return null;
+  }
+};
+
+const buildKnowledgeBaseDocuments = () => {
+  const docs = KNOWLEDGE_BASE.map((entry) => {
+    return new Document({
+      pageContent: `${entry.strategy} ${entry.alternative}`,
+      metadata: {
+        id: entry.id,
+        levelMin: entry.levelMin,
+        levelMax: entry.levelMax,
+        difficulty: entry.difficulty,
+        tags: entry.tags,
+        strategy: entry.strategy,
+        alternative: entry.alternative,
+      },
+    });
+  });
+  return docs;
+};
+
+const queryVectorStoreForHints = async (question, level, limit = 4) => {
+  if (!vectorStore) {
+    // Fallback to in-memory lexical search
+    return retrieveCandidates({ question, level, limit });
+  }
+
+  try {
+    const results = await vectorStore.similaritySearch(question, limit);
+    const ranked = results.map((doc) => {
+      const metadata = doc.metadata;
+      const levelAff = levelAffinity(level, {
+        levelMin: metadata.levelMin,
+        levelMax: metadata.levelMax,
+      });
+      return {
+        id: metadata.id,
+        levelMin: metadata.levelMin,
+        levelMax: metadata.levelMax,
+        difficulty: metadata.difficulty,
+        tags: metadata.tags,
+        strategy: metadata.strategy,
+        alternative: metadata.alternative,
+        retrievalScore: levelAff * 0.7 + 0.3, // Boost by level affinity
+      };
+    });
+    return ranked;
+  } catch (error) {
+    console.warn("[LangChain] Vector search failed, falling back to lexical:", error.message);
+    return retrieveCandidates({ question, level, limit });
+  }
+};
+
+const fallbackWhenGeminiUnavailable = async (context, reason) => {
+  if (reason) {
+    console.warn(`[LangChain] Gemini unavailable (${reason}).`);
+  }
+
+  // Prefer another LLM if configured.
+  if (process.env.OPENAI_API_KEY) {
+    console.warn("[LangChain] Falling back to OpenAI generation.");
+    return generateWithOpenAI(context);
+  }
+
+  const primary = context?.retrieved?.[0]?.strategy || "Try a safer timing-based approach for this level.";
+  return `Gemini is unavailable right now. Suggested strategy: ${primary}`;
+};
+
+const generateWithGemini = async (context) => {
+  if (!process.env.GOOGLE_API_KEY) {
+    console.warn("[LangChain] Gemini client not initialized, falling back to templates.");
+    return generateWithTemplates(context);
+  }
+
+  if (Date.now() < geminiBlockedUntil) {
+    const secondsLeft = Math.ceil((geminiBlockedUntil - Date.now()) / 1000);
+    return fallbackWhenGeminiUnavailable(context, `cooldown active (${secondsLeft}s remaining)`);
+  }
+
+  try {
+    const { question, level, failCount, retrieved } = context;
+    const strategySummary = retrieved
+      .slice(0, 2)
+      .map((s) => `- ${s.strategy}`)
+      .join("\n");
+
+    const prompt = `You are an adaptive game AI coach. A player on Level ${level} asked: "${question}"${
+      failCount >= 2 ? ` They've failed ${failCount} times, so suggest a lower-risk approach.` : ""
+    }
+
+Based on these expert strategies:
+${strategySummary}
+
+Generate 1-2 practical sentences combining the best approaches. Be conversational and specific. Respond in under 150 characters.`;
+
+    const apiKey = process.env.GOOGLE_API_KEY;
+    const model = await chooseGeminiModel();
+    if (!model) {
+      throw new Error("No Gemini model is available for this API key.");
+    }
+
+    const response = await fetch(`${GCP_GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 96,
+        },
+      }),
+    });
+
+    const raw = await response.text();
+    if (!raw || !raw.trim()) {
+      throw new Error(`Empty response body from Gemini (${response.status}).`);
+    }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`Non-JSON Gemini response (${response.status}): ${raw.slice(0, 200)}`);
+    }
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        geminiBlockedUntil = Date.now() + GEMINI_429_COOLDOWN_MS;
+        throw new Error(`Gemini rate/quota limited (429). Cooling down for ${Math.round(GEMINI_429_COOLDOWN_MS / 60000)} minute(s).`);
+      }
+      throw new Error(`Gemini API error (${response.status}): ${JSON.stringify(data).slice(0, 300)}`);
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p?.text).filter(Boolean).join("\n");
+    if (text && text.trim()) {
+      console.log("[LangChain] Gemini text generated successfully.");
+      return text.trim();
+    }
+
+    throw new Error("Gemini returned no text content.");
+  } catch (error) {
+    console.error("[LangChain] Gemini generation failed:", error.message);
+    return fallbackWhenGeminiUnavailable(context, error.message);
+  }
+};
+
+// GENERATIVE_PROMPT_FN will be defined after all generation functions are declared
 
 const KNOWLEDGE_BASE = [
   {
@@ -238,11 +489,39 @@ function generateWithTemplates(context) {
   return template;
 }
 
+// ─── Determine which generation function to use ─────────────────────────────
+// Priority: Gemini (LangChain RAG) > OpenAI > Template-based fallback
+const GENERATIVE_PROMPT_FN = process.env.GOOGLE_API_KEY
+  ? generateWithGemini
+  : process.env.OPENAI_API_KEY
+  ? generateWithOpenAI
+  : generateWithTemplates;
+
 export const generateAdaptiveStrategy = async ({ question, level, playerProgress, failCount }) => {
+  // Initialize LangChain resources on first call
+  if (process.env.GOOGLE_API_KEY) {
+    await initializeLangChainResources();
+  }
+
+  // Initialize vector store on first call
+  if (!vectorStore && embeddingsModel && !disableVectorStore) {
+    try {
+      const docs = buildKnowledgeBaseDocuments();
+      vectorStore = await MemoryVectorStore.fromDocuments(docs, embeddingsModel);
+      console.log("[LangChain] Vector store initialized with RAG documents.");
+    } catch (e) {
+      console.warn("[LangChain] Vector store setup failed, using fallback:", e.message);
+      disableVectorStore = true;
+      embeddingsModel = null;
+    }
+  }
+
   console.log(`[AI Agent] Processing hint for level ${level}, question: "${question}"`);
   const currentLevel = Math.max(1, Number(level || playerProgress?.level || 1));
-  const retrieved = retrieveCandidates({ question, level: currentLevel, limit: 4 });
-  console.log(`[AI Agent] Retrieved ${retrieved.length} candidate strategies.`);
+  
+  // Use LangChain RAG for retrieval if available, otherwise fall back to lexical
+  const retrieved = await queryVectorStoreForHints(question, currentLevel, 4);
+  console.log(`[AI Agent] Retrieved ${retrieved.length} candidate strategies via RAG.`);
 
   const scored = [];
   for (const candidate of retrieved) {
@@ -261,7 +540,7 @@ export const generateAdaptiveStrategy = async ({ question, level, playerProgress
   const primary = scored[0] || KNOWLEDGE_BASE[0];
   const secondary = scored[1] || scored[0] || KNOWLEDGE_BASE[1];
   
-  // Generate adaptive response text (using LLM or templates)
+  // Generate adaptive response text (using Gemini, OpenAI, or templates)
   const generatedResponse = await GENERATIVE_PROMPT_FN({
     question,
     level: currentLevel,
@@ -288,5 +567,6 @@ export const generateAdaptiveStrategy = async ({ question, level, playerProgress
     level: currentLevel,
     modelConfidence: Number(primary.finalScore.toFixed(3)),
     retrievedDocs: scored.map((item) => item.id),
+    ragEnabled: !!vectorStore,
   };
 };
