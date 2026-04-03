@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 // Point this at your game-progress microservice GraphQL endpoint
-const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL || "http://localhost:4000/graphql";
+const GRAPHQL_ENDPOINT = import.meta.env.VITE_GRAPHQL_URL || "http://localhost:4002/graphql";
 
 // ─── Hint Category Config ─────────────────────────────────────────────────────
 const HINT_CATEGORIES = {
@@ -50,11 +50,6 @@ const PLAYER_PROGRESS_QUERY = `
       experiencePoints
       score
       progress
-      achievements {
-        id
-        name
-        unlockedAt
-      }
     }
   }
 `;
@@ -339,6 +334,13 @@ const SUGGESTIONS = [
 ];
 
 const ts = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const SYSTEM_MESSAGE = {
+  id: 1,
+  role: "assistant",
+  category: "system",
+  content: "ARIA online. I'm your Game Intelligence Assistant. Ask me anything.",
+  time: ts(),
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 // userId should come from your auth context/store, e.g.:
@@ -350,19 +352,11 @@ export default function GameAssistant({ userId }) {
   const [input, setInput]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [ragEnabled, setRagEnabled] = useState(null);
+  const storageKey = `aria-chat-history:${userId || "anonymous"}`;
 
   const { stats, statsLoading } = usePlayerStats(userId);
 
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      role: "assistant",
-      category: "system",
-      content:
-        "ARIA online. I'm your Game Intelligence Assistant. Ask me anything.",
-      time: ts(),
-    },
-  ]);
+  const [messages, setMessages] = useState([SYSTEM_MESSAGE]);
 
   const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
@@ -372,6 +366,34 @@ export default function GameAssistant({ userId }) {
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
+
+  // Load conversation history from localStorage on mount / user change.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        setMessages([SYSTEM_MESSAGE]);
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) {
+        setMessages(parsed);
+      } else {
+        setMessages([SYSTEM_MESSAGE]);
+      }
+    } catch {
+      setMessages([SYSTEM_MESSAGE]);
+    }
+  }, [storageKey]);
+
+  // Persist conversation history across reloads.
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-100)));
+    } catch {
+      // best-effort persistence only
+    }
+  }, [messages, storageKey]);
 
   // Inject a level-specific hint from game-hints.txt once when panel first opens
   useEffect(() => {
@@ -419,9 +441,9 @@ export default function GameAssistant({ userId }) {
       const category =
         ai.category && HINT_CATEGORIES[ai.category]
           ? ai.category
-          : inferCategory(ai.response, ai.proactiveSuggestion);
+          : inferCategory(ai.response || ai.message, ai.proactiveSuggestion);
 
-      setRagEnabled(ai.ragEnabled);
+      setRagEnabled(Boolean(ai.ragEnabled));
 
       setMessages(prev => [
         ...prev,
@@ -429,8 +451,8 @@ export default function GameAssistant({ userId }) {
           id: Date.now() + 1,
           role: "assistant",
           category,
-          content: ai.response,
-          hints: ai.hints || [],
+          content: ai.response || ai.message || "No response generated.",
+          hints: ai.hints || ai.relevantHints || [],
           alternativeStrategies: ai.alternativeStrategies || [],
           modelConfidence: ai.modelConfidence,
           time: ts(),
@@ -638,7 +660,7 @@ export default function GameAssistant({ userId }) {
             />
             <button
               className="ga-clear"
-              onClick={() => setMessages(prev => [prev[0]])}
+              onClick={() => setMessages([SYSTEM_MESSAGE])}
               title="Clear history"
             >
               Clear
