@@ -59,6 +59,7 @@ const typeDefs = `#graphql
   type PlayerProgress {
     progressId: ID!
     userId: ID!
+    username: String
     level: Int!
     experiencePoints: Int!
     score: Int!
@@ -72,6 +73,17 @@ const typeDefs = `#graphql
   }
 
   type AIResponse {
+    response: String!
+    hints: [String!]!
+    alternativeStrategies: [String!]!
+    proactiveSuggestion: String
+    failCount: Int!
+    modelConfidence: Float!
+    retrievedDocs: [String!]!
+    ragEnabled: Boolean!
+    category: String!
+
+    # Compatibility fields used by older clients
     message: String!
     level: Int!
     userId: ID!
@@ -197,6 +209,17 @@ const resolvers = {
       });
 
       return {
+        response: aiResult.response,
+        hints: aiResult.hints || relevantHints,
+        alternativeStrategies: aiResult.alternativeStrategies || [],
+        proactiveSuggestion: aiResult.proactiveSuggestion || null,
+        failCount,
+        modelConfidence: Number(aiResult.modelConfidence || 0),
+        retrievedDocs: aiResult.retrievedDocs || [],
+        ragEnabled: Boolean(aiResult.ragEnabled),
+        category: aiResult.proactiveSuggestion ? "critical" : "general",
+
+        // Compatibility fields
         message: aiResult.response,
         level: currentLevel,
         userId: String(progress?.userId || "anonymous"),
@@ -217,6 +240,7 @@ const resolvers = {
 
       return {
         ...progress.toObject(),
+        username: null,
         recentHints: recentHintDocs.map((doc) => doc.hint),
       };
     },
