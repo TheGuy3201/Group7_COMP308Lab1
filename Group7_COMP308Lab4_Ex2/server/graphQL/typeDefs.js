@@ -28,6 +28,35 @@ const typeDefs = `#graphql
     description: String
   }
 
+  type AIResponse {
+  response: String!
+  hints: [String!]!
+  alternativeStrategies: [String!]!
+  proactiveSuggestion: String
+  failCount: Int!
+  level: Int!
+  modelConfidence: Float!
+  retrievedDocs: [String!]!
+  ragEnabled: Boolean!
+  category: String!
+}
+
+type Achievement {
+  id: ID!
+  name: String!
+  unlockedAt: String
+}
+
+type PlayerProgress {
+  userId: ID!
+  username: String
+  level: Int!
+  experiencePoints: Int!
+  score: Int!
+  progress: String
+  achievements: [Achievement!]!
+}
+
   type Query {
     users: [User!]!
     user(userId: ID!): User
@@ -39,6 +68,9 @@ const typeDefs = `#graphql
     gamesByYear(releaseYear: Int!): [Game!]!
 
     searchGames(searchTerm: String!): [Game!]!
+    gameAIQuery(input: String!): AIResponse!
+    playerProgress(userId: ID!): PlayerProgress!
+    gameHint(level: Int!): String!
   }
 
   type Mutation {
