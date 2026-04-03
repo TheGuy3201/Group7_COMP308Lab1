@@ -2,6 +2,10 @@
 import User from './models/user.model.js';
 import Game from './models/game.model.js';
 import bcrypt from 'bcrypt';
+import { generateAdaptiveStrategy } from '../microservices/ai-strategy-agent.js';
+import { searchHintsByProgress } from '../microservices/hint-search-service.js';
+import GameProgress from './models/gameProgress.model.js';
+import AIHint from './models/aiHint.model.js';
 
 const resolvers = {
   Query: {
@@ -48,7 +52,43 @@ const resolvers = {
           { platform: { $regex: searchTerm, $options: "i" } }
         ]
       });
-    }
+    },
+
+    gameAIQuery: async (_, { input }, context) => {
+  const userId = context?.userId || "anonymous";
+  const player = await GameProgress.findOne({ userId });
+  const result = await generateAdaptiveStrategy({
+    question: input,
+    level: player?.level || 1,
+    playerProgress: player,
+    failCount: 0,
+  });
+  // persist to MongoDB
+  await new AIHint({
+    userId,
+    level: player?.level || 1,
+    input,
+    hint: result.response,
+    retrievedHints: result.hints,
+  }).save();
+  return result;
+},
+
+playerProgress: async (_, { userId }) => {
+  const player = await GameProgress.findOne({ userId });
+  if (!player) throw new Error(`No progress found for user ${userId}`);
+  return player;
+},
+
+gameHint: async (_, { level }) => {
+  const hints = await searchHintsByProgress({
+    level,
+    question: "",
+    playerProgress: null,
+    limit: 1,
+  });
+  return hints[0] ?? "Keep pushing forward!";
+},
   },
 
   Mutation: {

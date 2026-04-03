@@ -554,19 +554,26 @@ export const generateAdaptiveStrategy = async ({ question, level, playerProgress
       : null;
 
   return {
-    response: proactiveSuggestion
-      ? `${generatedResponse} ${proactiveSuggestion}`
-      : generatedResponse,
-    hints: [primary.strategy, secondary.strategy],
-    alternativeStrategies:
-      failCount >= 2
-        ? [primary.alternative, secondary.alternative]
-        : [secondary.alternative],
-    proactiveSuggestion,
-    failCount,
-    level: currentLevel,
-    modelConfidence: Number(primary.finalScore.toFixed(3)),
-    retrievedDocs: scored.map((item) => item.id),
-    ragEnabled: !!vectorStore,
-  };
+  response: proactiveSuggestion
+    ? `${generatedResponse} ${proactiveSuggestion}`
+    : generatedResponse,
+  hints: [primary.strategy, secondary.strategy],
+  alternativeStrategies:
+    failCount >= 2
+      ? [primary.alternative, secondary.alternative]
+      : [secondary.alternative],
+  proactiveSuggestion,
+  failCount,
+  level: currentLevel,
+  modelConfidence: Number(primary.finalScore.toFixed(3)),
+  retrievedDocs: scored.map((item) => item.id),
+  ragEnabled: !!vectorStore,
+  category: proactiveSuggestion
+    ? "critical"
+    : primary.tags?.some(t => /boss|combo|burst|tactic|rotation|cooldown/.test(t))
+    ? "strategy"
+    : primary.tags?.some(t => /lore|story|secret|legend/.test(t))
+    ? "lore"
+    : "general",
+};
 };

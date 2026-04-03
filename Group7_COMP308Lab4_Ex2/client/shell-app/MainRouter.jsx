@@ -7,15 +7,25 @@ import Users from "./user/Users.jsx";
 import Profile from "./user/Profile.jsx";
 import PrivateRoute from "./lib/PrivateRoute.jsx";
 import EditProfile from "./user/EditProfile.jsx";
-
 import Menu from "./core/Menu";
+import GameAssistant from "./src/GameAssistant.jsx";
 
+// ── Replace this with however your app exposes the logged-in user ──────────────
+// e.g. import { useAuth } from "./lib/authContext";
+// and then inside MainRouter: const { user } = useAuth();
+// For now we read from localStorage as a safe default until auth is wired up.
+const getStoredUserId = () => {
+  try { return JSON.parse(localStorage.getItem("user"))?._id || null; }
+  catch { return null; }
+};
+
+// ─── Remote MFE fallbacks ─────────────────────────────────────────────────────
 const AuthRemoteUnavailable = ({ mode }) => (
   <div style={{ padding: 24 }}>
     <h2 style={{ marginTop: 0 }}>Authentication service unavailable</h2>
     <p>
-      Unable to load remote auth page for <strong>{mode}</strong>. Ensure `client/auth-app` is running on
-      `http://localhost:5175`.
+      Unable to load remote auth page for <strong>{mode}</strong>. Ensure{" "}
+      <code>client/auth-app</code> is running on <code>http://localhost:5175</code>.
     </p>
   </div>
 );
@@ -28,8 +38,8 @@ const ProgressRemoteUnavailable = () => (
   <div style={{ padding: 24 }}>
     <h2 style={{ marginTop: 0 }}>Game Progress service unavailable</h2>
     <p>
-      Unable to load the Game Progress micro frontend. Ensure `client/game-progress-app` is running on
-      `http://localhost:5176`.
+      Unable to load the Game Progress micro frontend. Ensure{" "}
+      <code>client/game-progress-app</code> is running on <code>http://localhost:5176</code>.
     </p>
   </div>
 );
@@ -38,26 +48,24 @@ const RemoteGameProgressPage = lazy(() =>
   import("gameProgressApp/GameProgressPage").catch(() => ({ default: ProgressRemoteUnavailable }))
 );
 
+// ─── Three.js Background ──────────────────────────────────────────────────────
 const Particles = () => {
   const particlesRef = useRef();
   const particleCount = 1500;
 
   const [positions, colors] = useMemo(() => {
     const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    
+    const colors    = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 50;
+      positions[i * 3]     = (Math.random() - 0.5) * 50;
       positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
       positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-      
       const color = new THREE.Color();
       color.setHSL(Math.random() * 0.3 + 0.5, 0.7, 0.6);
-      colors[i * 3] = color.r;
+      colors[i * 3]     = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
     }
-    
     return [positions, colors];
   }, []);
 
@@ -71,145 +79,135 @@ const Particles = () => {
   return (
     <points ref={particlesRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particleCount}
-          array={positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          count={particleCount}
-          array={colors}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" count={particleCount} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-color"    count={particleCount} array={colors}    itemSize={3} />
       </bufferGeometry>
       <pointsMaterial
-        size={0.15}
-        vertexColors
-        transparent
-        opacity={0.8}
-        sizeAttenuation
-        blending={THREE.AdditiveBlending}
+        size={0.15} vertexColors transparent opacity={0.8}
+        sizeAttenuation blending={THREE.AdditiveBlending}
       />
     </points>
   );
 };
 
-const GradientBackground = () => {
-  return (
-    <mesh position={[0, 0, -20]}>
-      <planeGeometry args={[100, 100]} />
-      <shaderMaterial
-        uniforms={{
-          color1: { value: new THREE.Color("#1a1a2e") },
-          color2: { value: new THREE.Color("#0f3460") },
-          color3: { value: new THREE.Color("#16213e") },
-        }}
-        vertexShader={`
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `}
-        fragmentShader={`
-          uniform vec3 color1;
-          uniform vec3 color2;
-          uniform vec3 color3;
-          varying vec2 vUv;
-          
-          void main() {
-            vec3 color = mix(color1, color2, vUv.y);
-            color = mix(color, color3, vUv.x * 0.5);
-            gl_FragColor = vec4(color, 1.0);
-          }
-        `}
-      />
-    </mesh>
-  );
-};
+const GradientBackground = () => (
+  <mesh position={[0, 0, -20]}>
+    <planeGeometry args={[100, 100]} />
+    <shaderMaterial
+      uniforms={{
+        color1: { value: new THREE.Color("#1a1a2e") },
+        color2: { value: new THREE.Color("#0f3460") },
+        color3: { value: new THREE.Color("#16213e") },
+      }}
+      vertexShader={`
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `}
+      fragmentShader={`
+        uniform vec3 color1;
+        uniform vec3 color2;
+        uniform vec3 color3;
+        varying vec2 vUv;
+        void main() {
+          vec3 color = mix(color1, color2, vUv.y);
+          color = mix(color, color3, vUv.x * 0.5);
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `}
+    />
+  </mesh>
+);
 
+// ─── Router ───────────────────────────────────────────────────────────────────
 function MainRouter() {
+  // Swap getStoredUserId() for useAuth() once your auth context is available
+  const userId = getStoredUserId();
+
   return (
     <>
+      {/* Three.js animated background */}
       <div
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 0,
-          pointerEvents: "none",
+          position: "fixed", top: 0, left: 0,
+          width: "100%", height: "100%",
+          zIndex: 0, pointerEvents: "none",
         }}
       >
-        <Canvas 
-          camera={{ position: [0, 0, 15], fov: 75 }} 
-          style={{ width: '100%', height: '100%', display: 'block' }}
+        <Canvas
+          camera={{ position: [0, 0, 15], fov: 75 }}
+          style={{ width: "100%", height: "100%", display: "block" }}
           gl={{ alpha: true, antialias: true }}
         >
           <GradientBackground />
           <Particles />
         </Canvas>
       </div>
-      <div style={{ minHeight: '100vh', width: '100%', position: 'relative', zIndex: 1 }}>
-         <Menu />
-      
-      <Routes>
-         <Route path="/" element={<Home />} />
-         <Route path="/users" element={<Users />} />
-         <Route
-           path="/progress"
-           element={
-             <Suspense fallback={<div style={{ padding: 24 }}>Loading game progress...</div>}>
-               <RemoteGameProgressPage />
-             </Suspense>
-           }
-         />
-         <Route
-           path="/register"
-           element={
-             <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication...</div>}>
-               <RemoteAuthPage mode="register" />
-             </Suspense>
-           }
-         />
-         <Route
-           path="/login"
-           element={
-             <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication...</div>}>
-               <RemoteAuthPage mode="login" />
-             </Suspense>
-           }
-         />
-         <Route
-           path="/logout"
-           element={
-             <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication...</div>}>
-               <RemoteAuthPage mode="logout" />
-             </Suspense>
-           }
-         />
-        
-        <Route
-          path="/user/edit/:userId"
-          element={
-            <PrivateRoute>
-               <EditProfile />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/user/:userId"
-          element={
-            <PrivateRoute>
-              <Profile />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </div>
+
+      {/* App shell */}
+      <div style={{ minHeight: "100vh", width: "100%", position: "relative", zIndex: 1 }}>
+        <Menu />
+
+        <Routes>
+          <Route path="/"       element={<Home />} />
+          <Route path="/users"  element={<Users />} />
+
+          <Route
+            path="/progress"
+            element={
+              <Suspense fallback={<div style={{ padding: 24 }}>Loading game progress…</div>}>
+                <RemoteGameProgressPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication…</div>}>
+                <RemoteAuthPage mode="register" />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication…</div>}>
+                <RemoteAuthPage mode="login" />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/logout"
+            element={
+              <Suspense fallback={<div style={{ padding: 24 }}>Loading authentication…</div>}>
+                <RemoteAuthPage mode="logout" />
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="/user/edit/:userId"
+            element={
+              <PrivateRoute>
+                <EditProfile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/user/:userId"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </div>
+
+      {/* Game Assistant — global, persists across all routes */}
+      <GameAssistant userId={userId} />
     </>
   );
 }
