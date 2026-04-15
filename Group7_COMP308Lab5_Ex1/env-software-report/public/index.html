@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Environmental Software Initiative Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Serif:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="layout">
+      <header class="hero reveal">
+        <p class="eyebrow">COMP 308 - Environmental Software Report Tool</p>
+        <h1>Summarize Recent Sustainability Initiatives by Software Makers</h1>
+        <p>
+          Select recent sources, generate a report, and keep your findings current with provider links
+          included in the final output.
+        </p>
+      </header>
+
+      <section class="panel reveal" aria-label="Source selection panel">
+        <h2>1) Select Recent Sources</h2>
+        <p class="hint">Sources in this list include updates from 2025-2026.</p>
+        <div id="sourceList" class="source-list" aria-live="polite"></div>
+      </section>
+
+      <section class="panel reveal" aria-label="Summarizer form panel">
+        <h2>2) Add Report Focus</h2>
+        <form id="summaryForm">
+          <label for="focusInput">Optional focus prompt</label>
+          <textarea
+            id="focusInput"
+            name="focusInput"
+            rows="5"
+            placeholder="Example: Compare energy efficiency metrics and water stewardship claims."
+          ></textarea>
+          <button id="generateButton" type="submit">Generate Summary</button>
+        </form>
+        <p id="statusMessage" class="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel output reveal" aria-label="Generated report panel">
+        <h2>3) Generated Report</h2>
+        <p class="hint">Copy from this panel into your assignment document if needed.</p>
+        <pre id="reportOutput">No report generated yet.</pre>
+      </section>
+    </main>
+  </body>
+</html>
